@@ -357,8 +357,7 @@ def get_email_analysis(email_id: str, db_path: Optional[Path] = None) -> Optiona
     arc = ArcContract(
         verdict=proto_row["arc_verdict"] or "none",
         instance_count=0,
-        details="Retrieved from forensic database archive",
-        score_penalty=0
+        details="Retrieved from forensic database archive"
     )
     raw_hops = json.loads(proto_row["relay_hops_json"] or "[]")
     relay_hops = [RelayHopContract(**h) for h in raw_hops]
