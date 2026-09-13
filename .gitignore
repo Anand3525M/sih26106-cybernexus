@@ -13,6 +13,7 @@ __pycache__/
 *.db
 *.sqlite
 *.sqlite3
+*audit_ledger.json
 
 # Generated Forensic Reports
 backend/data/reports/*.pdf

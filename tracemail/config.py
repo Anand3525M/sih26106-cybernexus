@@ -11,6 +11,7 @@ SAMPLES_DIR = BASE_DIR / "test-data"
 REPORTS_DIR = BACKEND_DIR / "data" / "reports"
 DB_PATH = BASE_DIR / "tracemail.db"
 GEOIP_DB_PATH = GEOIP_DIR / "GeoLite2-City.mmdb"
+LEDGER_PATH = DATA_DIR / "audit_ledger.json"
 
 class Settings(BaseModel):
     PROJECT_NAME: str = "TraceMail"
@@ -24,6 +25,7 @@ class Settings(BaseModel):
     REPORTS_DIR: Path = REPORTS_DIR
     SAMPLES_DIR: Path = SAMPLES_DIR
     DB_PATH: Path = DB_PATH
+    LEDGER_PATH: Path = LEDGER_PATH
     
     # Offline Air-Gapped Enforcement & Timeouts
     DEMO_MODE: bool = True
