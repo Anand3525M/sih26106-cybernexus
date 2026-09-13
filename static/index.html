@@ -121,7 +121,7 @@
           <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
           <span>AUDIT CHAIN: INTACT</span>
         </div>
-        <button onclick="runAuditVerify()" class="mono text-[10px] px-2.5 py-1 rounded glass-pill hover:bg-slate-800 text-slate-200 transition">
+        <button onclick="triggerTamperSimulation()" title="Click to corrupt a byte" class="mono text-[10px] px-2.5 py-1 rounded bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-500/40 mr-1">SIMULATE TAMPER</button><button onclick="runAuditVerify()" class="mono text-[10px] px-2.5 py-1 rounded glass-pill hover:bg-slate-800 text-slate-200 transition">
           RE-VERIFY
         </button>
         <div class="mono text-[10px] text-slate-400 border-l border-slate-700 pl-3">
@@ -553,6 +553,27 @@
       dropZone.classList.remove('border-cyan-400');
       if (e.dataTransfer.files.length) analyzeEmlFile(e.dataTransfer.files[0]);
     });
+
+    
+    // Real-Time WebSocket Threat Stream
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws/threat-stream`);
+    socket.onmessage = function(event) {
+        const payload = JSON.parse(event.data);
+        renderAnalysis(payload);
+    };
+
+    // Live Tamper Simulation Trigger
+    async function triggerTamperSimulation() {
+        try {
+            const res = await fetch("/api/v1/integrity/tamper", { method: "POST" });
+            const data = await res.json();
+            alert("⚠️ Artifact Tamper Injected! Now click RE-VERIFY to inspect cryptographic failure.");
+            runAuditVerify();
+        } catch(e) {
+            alert("Tamper injection error: " + e.message);
+        }
+    }
 
     window.addEventListener('DOMContentLoaded', runAuditVerify);
   </script>
