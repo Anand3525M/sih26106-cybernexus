@@ -458,4 +458,22 @@ async def inject_ledger_tamper():
             return {"status": "TAMPER_INJECTED", "corrupted_block": target_idx}
     return {"status": "FAILED", "reason": "Ledger empty or not found"}
 
+@app.post("/api/v1/integrity/reseal", tags=["Cryptographic Audit"])
+async def reseal_ledger_chain():
+    """Recalculates and reseals the SHA-256 audit ledger forward hashes."""
+    ledger = IntegrityLedger(settings.LEDGER_PATH)
+    chain = ledger.load_chain()
+    from cases.integrity import GENESIS_HASH
+    expected_prev = GENESIS_HASH
+    for block in chain:
+        block["prev_hash"] = expected_prev
+        block["current_hash"] = ledger.compute_record_hash(
+            block["record_id"], block["verdict"], block["threat_score"], block["prev_hash"]
+        )
+        if "evidence_hash" in block and block["evidence_hash"] != block["record_id"]:
+            block.pop("evidence_hash", None)
+        expected_prev = block["current_hash"]
+    ledger._save_chain(chain)
+    return {"status": "RESEALED", "total_blocks": len(chain), "latest_hash": expected_prev}
+
 
