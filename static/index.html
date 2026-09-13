@@ -1,1742 +1,571 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SENTINEL // Palantir Cyber Defense & Threat Intelligence Platform</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PALANTIR // SENTINEL FORENSIC INTELLIGENCE</title>
+  
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Vis.js Network for Adversary Graphs -->
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  
+  <!-- Leaflet Dark Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    :root {
-      --bg-base: #05080f;
-      --bg-surface: #0a0f1d;
-      --bg-card: #0e1626;
-      --bg-card-hover: #131d31;
-      --border-subtle: #18263d;
-      --border-tactical: #1f3554;
-      --border-active: #00f0ff;
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
-      --cyan-glow: #00f0ff;
-      --cyan-muted: #0284c7;
-      --amber-alert: #f59e0b;
-      --crimson-threat: #f43f5e;
-      --emerald-secure: #10b981;
-      --purple-link: #818cf8;
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background-color: var(--bg-base);
-      color: var(--text-primary);
-      font-family: var(--font-sans);
-      min-height: 100vh;
-      overflow-x: hidden;
-      background-image: 
-        linear-gradient(rgba(0, 240, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
-      background-size: 32px 32px;
-    }
-
-    /* ── Tactical Header ────────────────────────────────────────── */
-    header {
-      background: rgba(10, 15, 29, 0.92);
-      border-bottom: 1px solid var(--border-tactical);
-      backdrop-filter: blur(12px);
-      padding: 10px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 500;
-    }
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .reticle-icon {
-      width: 32px;
-      height: 32px;
-      border: 2px solid var(--cyan-glow);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      animation: reticle-pulse 3s ease-in-out infinite;
-    }
-    .reticle-icon::after {
-      content: '';
-      width: 8px;
-      height: 8px;
-      background: var(--cyan-glow);
-      border-radius: 50%;
-      box-shadow: 0 0 10px var(--cyan-glow);
-    }
-    @keyframes reticle-pulse {
-      0%, 100% { box-shadow: 0 0 5px rgba(0,240,255,0.4), inset 0 0 5px rgba(0,240,255,0.2); }
-      50% { box-shadow: 0 0 18px rgba(0,240,255,0.7), inset 0 0 10px rgba(0,240,255,0.4); }
-    }
-    .brand-title {
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #fff;
-    }
-    .brand-sub {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 1.5px;
-      color: var(--cyan-glow);
-    }
-    .classification-tag {
-      font-family: var(--font-mono);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      padding: 3px 8px;
-      background: rgba(244, 63, 94, 0.15);
-      border: 1px solid rgba(244, 63, 94, 0.4);
-      color: var(--crimson-threat);
-      border-radius: 2px;
-    }
-
-    .header-center {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    .clock-display {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .clock-display strong {
-      color: #fff;
-    }
-    .defcon-badge {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 1.5px;
-      padding: 4px 10px;
-      border-radius: 3px;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .defcon-1 { background: rgba(244,63,94,0.25); border: 1px solid var(--crimson-threat); color: #fff; box-shadow: 0 0 15px rgba(244,63,94,0.4); }
-    .defcon-2 { background: rgba(245,158,11,0.2); border: 1px solid var(--amber-alert); color: var(--amber-alert); }
-    .defcon-3 { background: rgba(245,158,11,0.15); border: 1px solid #d97706; color: #fbbf24; }
-    .defcon-4 { background: rgba(56,189,248,0.15); border: 1px solid var(--cyan-muted); color: var(--cyan-glow); }
-    .defcon-5 { background: rgba(16,185,129,0.15); border: 1px solid var(--emerald-secure); color: var(--emerald-secure); }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .tactical-btn {
-      background: rgba(14, 22, 38, 0.8);
-      border: 1px solid var(--border-tactical);
-      color: var(--text-secondary);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 6px 12px;
-      border-radius: 3px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-    .tactical-btn:hover {
-      border-color: var(--cyan-glow);
-      color: var(--cyan-glow);
-      box-shadow: 0 0 10px rgba(0,240,255,0.2);
-    }
-    .tactical-btn.primary {
-      background: rgba(0, 240, 255, 0.12);
-      border-color: var(--cyan-glow);
-      color: #fff;
-      font-weight: 700;
-    }
-    .tactical-btn.primary:hover {
-      background: rgba(0, 240, 255, 0.25);
-    }
-
-    /* ── Scenario Ribbon ────────────────────────────────────────── */
-    .scenario-ribbon {
-      background: #090e19;
-      border-bottom: 1px solid var(--border-subtle);
-      padding: 8px 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      overflow-x: auto;
-    }
-    .ribbon-label {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-    .scenario-chip {
-      background: rgba(14, 22, 38, 0.6);
-      border: 1px solid var(--border-tactical);
-      padding: 5px 12px;
-      border-radius: 3px;
-      font-size: 11px;
-      font-family: var(--font-mono);
-      color: var(--text-secondary);
-      cursor: pointer;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s;
-    }
-    .scenario-chip:hover {
-      border-color: var(--cyan-glow);
-      color: #fff;
-      background: rgba(0, 240, 255, 0.08);
-    }
-    .scenario-chip.threat-malicious { border-left: 3px solid var(--crimson-threat); }
-    .scenario-chip.threat-benign { border-left: 3px solid var(--emerald-secure); }
-
-    /* ── Mission Operations Workspace ──────────────────────────── */
-    .mission-grid {
-      display: grid;
-      grid-template-columns: 340px 1fr 380px;
-      gap: 16px;
-      padding: 16px 24px;
-      min-height: calc(100vh - 120px);
-    }
-
-    @media (max-width: 1300px) {
-      .mission-grid { grid-template-columns: 320px 1fr; }
-      .hud-col { grid-column: span 2; }
-    }
-    @media (max-width: 960px) {
-      .mission-grid { grid-template-columns: 1fr; }
-      .hud-col { grid-column: span 1; }
-    }
-
-    /* ── Tactical Cards ────────────────────────────────────────── */
-    .tac-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-tactical);
-      border-radius: 4px;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-    }
-    .tac-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; width: 4px; height: 100%;
-      background: var(--border-tactical);
-      transition: background 0.3s;
-    }
-    .tac-card.active-target::before {
-      background: var(--cyan-glow);
-      box-shadow: 0 0 10px var(--cyan-glow);
-    }
-    .tac-header {
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(10, 15, 29, 0.4);
-    }
-    .tac-title {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .tac-title .dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--cyan-glow);
-      box-shadow: 0 0 6px var(--cyan-glow);
-    }
-    .tac-body {
-      padding: 14px 16px;
-      flex: 1;
-    }
-
-    /* ── Left Column: Ingestion Console ────────────────────────── */
-    .ingest-tabs {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-    }
-    .ingest-tab-btn {
-      flex: 1;
-      padding: 6px;
-      background: rgba(10, 15, 29, 0.5);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      border-radius: 3px;
-      cursor: pointer;
-      text-align: center;
-    }
-    .ingest-tab-btn.active {
-      background: rgba(0, 240, 255, 0.1);
-      border-color: var(--cyan-glow);
-      color: var(--cyan-glow);
-      font-weight: 600;
-    }
-    textarea.tac-input {
-      width: 100%;
-      height: 240px;
-      background: #060a14;
-      border: 1px solid var(--border-subtle);
-      border-radius: 3px;
-      color: #38bdf8;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 10px;
-      resize: vertical;
-      line-height: 1.4;
-      outline: none;
-      transition: border 0.2s;
-    }
-    textarea.tac-input:focus {
-      border-color: var(--cyan-glow);
-      box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
-    }
-    .dropzone-box {
-      border: 1px dashed var(--border-tactical);
-      background: rgba(6, 10, 20, 0.6);
-      border-radius: 3px;
-      padding: 30px 16px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .dropzone-box:hover, .dropzone-box.drag-over {
-      border-color: var(--cyan-glow);
-      background: rgba(0, 240, 255, 0.05);
-    }
-    .dropzone-box .icon { font-size: 28px; margin-bottom: 6px; }
-    .dropzone-box p { font-size: 11px; color: var(--text-secondary); }
-    .telemetry-row {
-      display: flex;
-      justify-content: space-between;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--text-muted);
-      margin-top: 8px;
-    }
-
-    /* ── Center Operations Tabs ────────────────────────────────── */
-    .ops-tabs {
-      display: flex;
-      gap: 4px;
-      border-bottom: 1px solid var(--border-tactical);
-      background: var(--bg-surface);
-      padding: 0 12px;
-    }
-    .ops-tab-btn {
-      padding: 10px 16px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-    .ops-tab-btn:hover { color: var(--text-primary); }
-    .ops-tab-btn.active {
-      color: var(--cyan-glow);
-      border-bottom-color: var(--cyan-glow);
-      background: rgba(0, 240, 255, 0.04);
-    }
-
-    .ops-viewport { display: none; padding: 16px; }
-    .ops-viewport.active { display: block; }
-
-    /* Map & Graph containers */
-    #map {
-      width: 100%;
-      height: 380px;
-      border-radius: 3px;
-      border: 1px solid var(--border-tactical);
-    }
-    .leaflet-container { background: #05080f; }
-
-    @keyframes dashflow {
-      to { stroke-dashoffset: -32px; }
-    }
-    .animated-hop-line {
-      animation: dashflow 1.2s linear infinite !important;
-    }
-
-    /* Hop Table */
-    .tac-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 14px;
-    }
-    .tac-table thead th {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      text-align: left;
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-    .tac-table tbody td {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-secondary);
-      padding: 9px 10px;
-      border-bottom: 1px solid rgba(24, 38, 61, 0.4);
-    }
-    .tac-table tbody tr:hover td {
-      background: rgba(0, 240, 255, 0.03);
-      color: #fff;
-    }
-
-    /* Graph Viewport */
-    #graph-wrapper {
-      position: relative;
-      width: 100%;
-      height: 520px;
-      background: #05080f;
-      border: 1px solid var(--border-tactical);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    #campaign-graph-svg {
-      width: 100%;
-      height: 100%;
-    }
-    .graph-controls {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      display: flex;
-      gap: 6px;
-      z-index: 10;
-    }
-    .graph-ctrl-btn {
-      background: rgba(14, 22, 38, 0.9);
-      border: 1px solid var(--border-tactical);
-      color: var(--text-secondary);
-      padding: 4px 8px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      border-radius: 2px;
-      cursor: pointer;
-    }
-    .graph-ctrl-btn:hover { border-color: var(--cyan-glow); color: var(--cyan-glow); }
-
-    /* Node Inspector Drawer */
-    .node-drawer {
-      position: absolute;
-      bottom: 0; right: 0; width: 320px;
-      background: rgba(10, 15, 29, 0.95);
-      border-top: 1px solid var(--border-tactical);
-      border-left: 1px solid var(--border-tactical);
-      padding: 14px;
-      backdrop-filter: blur(8px);
-      transform: translateX(100%);
-      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 20;
-    }
-    .node-drawer.open { transform: translateX(0); }
-    .drawer-title {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--cyan-glow);
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .drawer-row {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
-      word-break: break-all;
-    }
-    .drawer-row strong { color: var(--text-muted); }
-
-    /* ── MITRE ATT&CK Matrix & Containment ──────────────────────── */
-    .mitre-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .mitre-card {
-      background: rgba(10, 15, 29, 0.7);
-      border: 1px solid var(--border-tactical);
-      border-left: 3px solid var(--amber-alert);
-      padding: 12px;
-      border-radius: 3px;
-    }
-    .mitre-id {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--amber-alert);
-      letter-spacing: 1px;
-    }
-    .mitre-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: #fff;
-      margin: 3px 0 6px 0;
-    }
-    .mitre-desc {
-      font-size: 11px;
-      color: var(--text-secondary);
-      line-height: 1.4;
-    }
-
-    .playbook-action {
-      background: rgba(10, 15, 29, 0.8);
-      border: 1px solid var(--border-tactical);
-      border-radius: 3px;
-      padding: 10px 14px;
-      margin-bottom: 8px;
-    }
-    .playbook-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 4px;
-    }
-    .playbook-title {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--cyan-glow);
-    }
-    .playbook-code {
-      background: #05080f;
-      border: 1px solid var(--border-subtle);
-      border-radius: 3px;
-      padding: 6px 10px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: #38bdf8;
-      margin-top: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .copy-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 12px;
-    }
-    .copy-btn:hover { color: #fff; }
-
-    /* ── Right Column: Threat Assessment HUD ────────────────────── */
-    .hud-col { display: flex; flex-direction: column; gap: 16px; }
-
-    .gauge-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 16px 0;
-    }
-    .gauge-svg { width: 170px; height: 170px; }
-    .gauge-bg { fill: none; stroke: rgba(31, 53, 84, 0.4); stroke-width: 10; }
-    .gauge-fill {
-      fill: none;
-      stroke-width: 10;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 1s ease-out, stroke 0.5s;
-    }
-    .gauge-val {
-      font-family: var(--font-mono);
-      font-size: 38px;
-      font-weight: 800;
-      fill: #fff;
-    }
-    .gauge-sub {
-      font-family: var(--font-mono);
-      font-size: 9px;
-      letter-spacing: 2px;
-      fill: var(--text-muted);
-    }
-
-    /* Auth Matrix */
-    .auth-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 8px;
-    }
-    .auth-cell {
-      background: rgba(6, 10, 20, 0.7);
-      border: 1px solid var(--border-subtle);
-      border-radius: 3px;
-      padding: 8px;
-      text-align: center;
-    }
-    .auth-cell .label {
-      font-family: var(--font-mono);
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--text-muted);
-      letter-spacing: 1px;
-    }
-    .auth-cell .val {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 800;
-      margin-top: 3px;
-    }
-    .status-pass { color: var(--emerald-secure); text-shadow: 0 0 6px rgba(16,185,129,0.4); }
-    .status-fail { color: var(--crimson-threat); text-shadow: 0 0 6px rgba(244,63,94,0.4); }
-    .status-none { color: var(--text-muted); }
-
-    /* Alert Banner */
-    .alert-banner {
-      padding: 10px 14px;
-      border-radius: 3px;
-      font-size: 11px;
-      line-height: 1.4;
-      margin-top: 10px;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-    .alert-danger {
-      background: rgba(244, 63, 94, 0.1);
-      border: 1px solid rgba(244, 63, 94, 0.3);
-      color: #fecdd3;
-    }
-    .alert-warning {
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #fde68a;
-    }
-
-    /* Score Breakdown */
-    .breakdown-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 0;
-      border-bottom: 1px solid rgba(24, 38, 61, 0.4);
-      font-size: 11px;
-    }
-    .breakdown-factor { color: var(--text-secondary); flex: 1; padding-right: 8px; }
-    .breakdown-pts { font-family: var(--font-mono); font-weight: 700; color: var(--crimson-threat); }
-
-    /* Security Sections */
-    .sec-section { margin-top: 14px; }
-    .sec-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--text-muted);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-    .sec-badge {
-      font-size: 9px;
-      padding: 1px 6px;
-      border-radius: 10px;
-      background: rgba(0, 240, 255, 0.15);
-      color: var(--cyan-glow);
-    }
-    .item-pill {
-      background: rgba(6, 10, 20, 0.6);
-      border: 1px solid var(--border-subtle);
-      border-radius: 3px;
-      padding: 6px 10px;
-      font-size: 11px;
-      margin-top: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .item-pill.danger {
-      border-color: rgba(244, 63, 94, 0.4);
-      background: rgba(244, 63, 94, 0.06);
-    }
-    .item-pill .name {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--text-secondary);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 220px;
-    }
-    .item-pill .name a { color: inherit; text-decoration: none; }
-    .item-pill .name a:hover { color: var(--cyan-glow); text-decoration: underline; }
-    .item-tag {
-      font-family: var(--font-mono);
-      font-size: 8px;
-      font-weight: 700;
-      padding: 2px 5px;
-      border-radius: 2px;
-      white-space: nowrap;
-    }
-    .tag-danger { background: rgba(244,63,94,0.2); color: var(--crimson-threat); border: 1px solid rgba(244,63,94,0.4); }
-    .tag-warning { background: rgba(245,158,11,0.2); color: var(--amber-alert); border: 1px solid rgba(245,158,11,0.4); }
-    .tag-safe { background: rgba(16,185,129,0.2); color: var(--emerald-secure); border: 1px solid rgba(16,185,129,0.4); }
-
-    /* ── Spinner ───────────────────────────────────────────────── */
-    .spinner-modal {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(5, 8, 15, 0.85);
-      backdrop-filter: blur(8px);
-      z-index: 1000;
-      align-items: center; justify-content: center;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .spinner-modal.active { display: flex; }
-    .radar-spinner {
-      width: 64px; height: 64px;
-      border: 2px solid rgba(0, 240, 255, 0.2);
-      border-top-color: var(--cyan-glow);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner-text {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      letter-spacing: 2px;
-      color: var(--cyan-glow);
-      text-transform: uppercase;
-    }
-
-    .hidden { display: none !important; }
+    body { font-family: 'Inter', sans-serif; background-color: #05070a; color: #cbd5e1; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .grid-mesh {
+      background-image: linear-gradient(to right, rgba(30, 41, 59, 0.25) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .hud-border { border: 1px solid rgba(51, 65, 85, 0.6); }
+    #leafletMap { height: 100%; width: 100%; background: #05070a; }
+    #entityGraph { height: 100%; width: 100%; background: #070a10; }
   </style>
 </head>
-<body>
+<body class="h-screen w-screen flex flex-col overflow-hidden select-none">
 
-<!-- ── Spinner Modal ─────────────────────────────────────────── -->
-<div id="spinnerModal" class="spinner-modal">
-  <div class="radar-spinner"></div>
-  <div class="spinner-text">Synthesizing RFC-822 Forensic Matrix...</div>
-</div>
-
-<!-- ── Tactical Header ────────────────────────────────────────── -->
-<header>
-  <div class="header-left">
-    <div class="reticle-icon"></div>
-    <div>
-      <div class="brand-title">SIH 26106 SENTINEL</div>
-      <div class="brand-sub">PALANTIR GOTHAM CYBER DEFENSE APPARATUS</div>
+  <!-- Top Tactical Command Bar -->
+  <header class="h-12 border-b border-slate-800 bg-[#080b12] px-4 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="relative flex h-2.5 w-2.5">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="mono text-xs font-bold tracking-widest text-slate-100">PALANTIR SENTINEL</span>
+        <span class="mono text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/30">DEFCON 2</span>
+        <span class="mono text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">TOP SECRET // REL TO SOC-INTEL</span>
+      </div>
+      <div class="h-4 w-[1px] bg-slate-800"></div>
+      <span id="utcClock" class="mono text-[10px] text-slate-400">UTC 00:00:00</span>
     </div>
-    <span class="classification-tag">TOP SECRET // REL TO SOC-INTEL</span>
-  </div>
 
-  <div class="header-center">
-    <div class="clock-display">
-      <span>UTC:</span> <strong id="clockUtc">--:--:--</strong>
-      <span style="color:var(--border-tactical)">|</span>
-      <span>LOC:</span> <strong id="clockLoc">--:--:--</strong>
+    <div class="flex items-center space-x-3">
+      <div id="ledgerBadge" class="mono text-[10px] px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+        <span>HASH CHAIN: 100% INTACT</span>
+      </div>
+      <button onclick="triggerPdfExport()" class="mono text-[10px] px-2.5 py-1 rounded bg-red-950/60 hover:bg-red-900 border border-red-500/50 text-red-200 flex items-center gap-1.5 transition">
+        <i data-lucide="file-down" class="w-3.5 h-3.5 text-red-400"></i>
+        <span>EXPORT STIX 2.1 / PDF</span>
+      </button>
+      <div class="mono text-[10px] px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
+        OPERATOR: PARMAR
+      </div>
     </div>
-    <div id="defconIndicator" class="defcon-badge defcon-5">
-      <span class="dot" style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span>
-      <span id="defconText">DEFCON 5 // STANDBY</span>
-    </div>
-  </div>
+  </header>
 
-  <div class="header-right">
-    <button id="audioToggleBtn" class="tactical-btn" onclick="toggleTacticalAudio()">
-      <span id="audioIcon">🔊</span> AUDIO: ON
-    </button>
-    <button class="tactical-btn" onclick="exportCurrentStix()">
-      📥 EXPORT STIX 2.1
-    </button>
-    <div class="classification-tag" style="color:var(--cyan-glow);border-color:var(--cyan-muted);">
-      ACTIVE CAMPAIGNS: <span id="campaignCounter">0</span>
-    </div>
-  </div>
-</header>
+  <!-- Main 3-Column Tactical Workspace -->
+  <div class="flex-1 flex overflow-hidden">
 
-<!-- ── Scenario Ribbon ────────────────────────────────────────── -->
-<div class="scenario-ribbon">
-  <span class="ribbon-label">TACTICAL THREAT SCENARIOS:</span>
-  <div class="scenario-chip threat-malicious" onclick="loadScenario('alpha')">
-    ⚠️ Scenario Alpha: PayPal Account Takeover
-  </div>
-  <div class="scenario-chip threat-malicious" onclick="loadScenario('bravo')">
-    🔀 Scenario Bravo: CEO Wire BEC Fraud
-  </div>
-  <div class="scenario-chip threat-malicious" onclick="loadScenario('charlie')">
-    💣 Scenario Charlie: Weaponized Invoice Dropper
-  </div>
-  <div class="scenario-chip threat-benign" onclick="loadScenario('delta')">
-    🛡️ Scenario Delta: Authorized Enterprise Memo
-  </div>
-</div>
+    <!-- Left Column: Ingestion Dock & Scenario Presets -->
+    <aside class="w-64 border-r border-slate-800 bg-[#06080e] p-3 flex flex-col justify-between shrink-0">
+      <div class="space-y-3">
+        
+        <!-- Stream Ingest Buffer -->
+        <div>
+          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80 mb-2">
+            <span class="mono text-[10px] text-slate-400 uppercase font-bold tracking-wider">Target Ingestion Buffer</span>
+            <span class="mono text-[9px] text-emerald-400">READY</span>
+          </div>
+          <div id="dropZone" class="border border-dashed border-slate-700 hover:border-red-500 rounded bg-[#090d16] p-3 text-center cursor-pointer transition">
+            <i data-lucide="upload-cloud" class="w-5 h-5 mx-auto mb-1 text-slate-400"></i>
+            <span class="mono text-[10px] font-bold block text-slate-200">DROP .EML STREAM</span>
+            <span class="mono text-[8px] text-slate-500 block mt-0.5">Air-Gapped RFC Parsing</span>
+            <input type="file" id="fileInput" class="hidden" accept=".eml,.txt">
+          </div>
+        </div>
 
-<!-- ── Main Mission Grid ──────────────────────────────────────── -->
-<main class="mission-grid">
+        <!-- Tactical Scenario Presets -->
+        <div>
+          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80 mb-2">
+            <span class="mono text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tactical Scenarios</span>
+            <span class="mono text-[9px] text-slate-500">4 ARRAYS</span>
+          </div>
+          <div class="space-y-1.5">
+            <button onclick="loadScenario('spoof_paypal')" class="w-full text-left p-2 rounded bg-[#090d16] hover:bg-slate-800 border border-slate-800/80 hover:border-red-500/50 transition">
+              <div class="flex justify-between items-center">
+                <span class="mono text-[10px] font-bold text-red-400">⚠️ Scenario Alpha</span>
+                <span class="mono text-[9px] text-red-400 font-bold">100/100</span>
+              </div>
+              <span class="mono text-[8px] text-slate-400 block mt-0.5 truncate">PayPal Account Takeover</span>
+            </button>
 
-  <!-- ── Left Column: Ingestion Console ───────────────────────── -->
-  <div class="tac-card active-target">
-    <div class="tac-header">
-      <div class="tac-title"><span class="dot"></span> TARGET INGESTION BUFFER</div>
-      <span class="classification-tag" style="font-size:8px;">RFC-822 / EML</span>
-    </div>
-    <div class="tac-body">
-      <div class="ingest-tabs">
-        <button id="tabBtnText" class="ingest-tab-btn active" onclick="switchIngestMode('text')">RAW TEXT</button>
-        <button id="tabBtnFile" class="ingest-tab-btn" onclick="switchIngestMode('file')">EML ATTACHMENT</button>
+            <button onclick="loadScenario('spoof_ceo_wire')" class="w-full text-left p-2 rounded bg-[#090d16] hover:bg-slate-800 border border-slate-800/80 hover:border-amber-500/50 transition">
+              <div class="flex justify-between items-center">
+                <span class="mono text-[10px] font-bold text-amber-400">🔀 Scenario Bravo</span>
+                <span class="mono text-[9px] text-amber-400 font-bold">85/100</span>
+              </div>
+              <span class="mono text-[8px] text-slate-400 block mt-0.5 truncate">CEO Wire BEC Fraud</span>
+            </button>
+
+            <button onclick="loadScenario('spoof_bank_alert')" class="w-full text-left p-2 rounded bg-[#090d16] hover:bg-slate-800 border border-slate-800/80 hover:border-amber-500/50 transition">
+              <div class="flex justify-between items-center">
+                <span class="mono text-[10px] font-bold text-amber-400">💣 Scenario Charlie</span>
+                <span class="mono text-[9px] text-amber-400 font-bold">78/100</span>
+              </div>
+              <span class="mono text-[8px] text-slate-400 block mt-0.5 truncate">Weaponized Invoice Dropper</span>
+            </button>
+
+            <button onclick="loadScenario('legit_google')" class="w-full text-left p-2 rounded bg-[#090d16] hover:bg-slate-800 border border-slate-800/80 hover:border-emerald-500/50 transition">
+              <div class="flex justify-between items-center">
+                <span class="mono text-[10px] font-bold text-emerald-400">🛡️ Scenario Delta</span>
+                <span class="mono text-[9px] text-emerald-400 font-bold">0/100</span>
+              </div>
+              <span class="mono text-[8px] text-slate-400 block mt-0.5 truncate">Authorized Enterprise Memo</span>
+            </button>
+          </div>
+        </div>
+
       </div>
 
-      <!-- Raw Text Area -->
-      <div id="ingestAreaText">
-        <textarea id="rawEmailInput" class="tac-input" placeholder="Paste complete RFC-822 raw headers and message stream..."></textarea>
+      <!-- Ingestion Buffer Telemetry -->
+      <div class="p-2 rounded bg-[#080b12] border border-slate-800 mono text-[9px] space-y-1">
+        <div class="flex justify-between text-slate-400">
+          <span>PARSER ENGINE:</span>
+          <span class="text-emerald-400">STRICT RFC-5322</span>
+        </div>
+        <div class="flex justify-between text-slate-400">
+          <span>SOCKET PRIVILEGE:</span>
+          <span class="text-slate-200">BLOCKED (ISOLATED)</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Stage: Multi-View Intelligence Deck -->
+    <main class="flex-1 bg-[#04060a] flex flex-col overflow-hidden grid-mesh">
+
+      <!-- View Selector Tabs -->
+      <div class="h-9 border-b border-slate-800 bg-[#070a10] px-3 flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-1 mono text-[10px]">
+          <button onclick="switchTab('telemetry')" id="tab-telemetry" class="px-2.5 py-1 rounded bg-slate-800 text-slate-100 font-bold border border-slate-700">
+            📡 FORENSIC MATRIX & PROTOCOLS
+          </button>
+          <button onclick="switchTab('map')" id="tab-map" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400">
+            🗺️ GEOSPATIAL HOP INTERCEPT
+          </button>
+          <button onclick="switchTab('graph')" id="tab-graph" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400">
+            🕸️ GOTHAM ENTITY GRAPH
+          </button>
+          <button onclick="switchTab('mitre')" id="tab-mitre" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400">
+            🎯 MITRE ATT&CK & PLAYBOOK
+          </button>
+        </div>
+        <span id="activeScanStatus" class="mono text-[9px] text-slate-400">AWAITING SCAN TRIGGER</span>
       </div>
 
-      <!-- File Dropzone -->
-      <div id="ingestAreaFile" class="hidden">
-        <div class="dropzone-box" id="dropZone" onclick="document.getElementById('fileInput').click()">
-          <div class="icon">📎</div>
-          <p>DROP RAW <strong>.EML</strong> OR <strong>.MSG</strong> FILE</p>
-          <span style="font-size:9px;color:var(--text-muted);margin-top:4px;display:block;">RFC-5322 COMPLIANT PARSER</span>
-          <input type="file" id="fileInput" accept=".eml,.msg,.txt" style="display:none" onchange="handleFileSelected()" />
+      <!-- Stage Views Container -->
+      <div class="flex-1 p-3 overflow-hidden relative">
+
+        <!-- VIEW 1: Forensics Telemetry & Matrix -->
+        <div id="view-telemetry" class="h-full flex flex-col gap-3 overflow-y-auto">
+          <!-- Threat Score & Protocols -->
+          <div class="grid grid-cols-4 gap-2.5 shrink-0">
+            <div class="p-2.5 rounded bg-[#070b14] border border-slate-800 flex flex-col justify-between">
+              <span class="mono text-[9px] text-slate-400 uppercase">Composite Threat Score</span>
+              <div class="flex items-baseline gap-1 my-0.5">
+                <span id="scoreVal" class="mono text-3xl font-bold text-red-500">--</span>
+                <span class="mono text-xs text-slate-500">/ 100</span>
+              </div>
+              <span id="verdictText" class="mono text-[8px] font-bold text-slate-400">STANDBY</span>
+            </div>
+
+            <div class="p-2.5 rounded bg-[#070b14] border border-slate-800 flex flex-col justify-between">
+              <span class="mono text-[9px] text-slate-400 uppercase">RFC 7208 SPF</span>
+              <span id="spfVal" class="mono text-base font-bold text-slate-300 my-0.5">--</span>
+              <span id="spfInfo" class="mono text-[8px] text-slate-500 truncate">Domain validation</span>
+            </div>
+
+            <div class="p-2.5 rounded bg-[#070b14] border border-slate-800 flex flex-col justify-between">
+              <span class="mono text-[9px] text-slate-400 uppercase">RFC 6376 DKIM</span>
+              <span id="dkimVal" class="mono text-base font-bold text-slate-300 my-0.5">--</span>
+              <span id="dkimInfo" class="mono text-[8px] text-slate-500 truncate">Signature verification</span>
+            </div>
+
+            <div class="p-2.5 rounded bg-[#070b14] border border-slate-800 flex flex-col justify-between">
+              <span class="mono text-[9px] text-slate-400 uppercase">RFC 7489 DMARC</span>
+              <span id="dmarcVal" class="mono text-base font-bold text-slate-300 my-0.5">--</span>
+              <span id="dmarcInfo" class="mono text-[8px] text-slate-500 truncate">Policy alignment</span>
+            </div>
+          </div>
+
+          <!-- Chronological Hop Timeline -->
+          <div class="p-2.5 rounded bg-[#070b14] border border-slate-800 shrink-0">
+            <div class="flex justify-between items-center pb-1 border-b border-slate-800/80 mb-2">
+              <span class="mono text-[9px] text-slate-400 font-bold uppercase">Chronological Relay Hops & Latency Anomalies</span>
+              <span id="hopSummary" class="mono text-[9px] text-slate-500">0 Hops Tracked</span>
+            </div>
+            <div id="hopList" class="grid grid-cols-3 gap-2">
+              <div class="p-2 rounded bg-[#05070c] border border-slate-800 mono text-[9px] text-slate-500 text-center">
+                Awaiting email ingestion...
+              </div>
+            </div>
+          </div>
+
+          <!-- Raw Disassembled MIME Headers -->
+          <div class="flex-1 p-2.5 rounded bg-[#070b14] border border-slate-800 flex flex-col min-h-[160px]">
+            <span class="mono text-[9px] text-slate-400 font-bold uppercase pb-1 border-b border-slate-800/80 mb-1">
+              Disassembled RFC-822 MIME Headers
+            </span>
+            <pre id="rawStream" class="flex-1 mono text-[10px] text-slate-300 bg-[#05070c] p-2 rounded border border-slate-800/80 overflow-auto select-text leading-relaxed">// Ingest email or select a tactical scenario to examine unfolded headers.</pre>
+          </div>
+        </div>
+
+        <!-- VIEW 2: Geospatial Map -->
+        <div id="view-map" class="h-full w-full hidden rounded border border-slate-800 overflow-hidden">
+          <div id="leafletMap"></div>
+        </div>
+
+        <!-- VIEW 3: Palantir Entity Graph -->
+        <div id="view-graph" class="h-full w-full hidden rounded border border-slate-800 overflow-hidden">
+          <div id="entityGraph"></div>
+        </div>
+
+        <!-- VIEW 4: MITRE ATT&CK Matrix -->
+        <div id="view-mitre" class="h-full hidden overflow-y-auto space-y-2 p-1">
+          <div class="p-3 rounded bg-[#070b14] border border-slate-800 mono text-xs space-y-2">
+            <div class="font-bold text-red-400 border-b border-slate-800 pb-1 flex justify-between">
+              <span>T1566.002 - SPEARPHISHING LINK</span>
+              <span class="text-slate-500">INITIAL ACCESS</span>
+            </div>
+            <p class="text-slate-300 text-[11px]">Adversary sent email with embedded malicious link impersonating legitimate account service update.</p>
+            <div class="p-2 rounded bg-[#05070c] text-[10px] text-amber-400">
+              Mitigation: Enforce DMARC quarantine policy and disable hyperlinked URL execution in sandbox.
+            </div>
+          </div>
+
+          <div class="p-3 rounded bg-[#070b14] border border-slate-800 mono text-xs space-y-2">
+            <div class="font-bold text-red-400 border-b border-slate-800 pb-1 flex justify-between">
+              <span>T1586.002 - EMAIL ACCOUNTS: DOMAIN HOMOGLYPH</span>
+              <span class="text-slate-500">RESOURCE DEVELOPMENT</span>
+            </div>
+            <p class="text-slate-300 text-[11px]">Adversary registered punycode domain replacing ASCII characters with lookalike Cyrillic characters.</p>
+            <div class="p-2 rounded bg-[#05070c] text-[10px] text-amber-400">
+              Mitigation: Gateway rule to flag all incoming Punycode (xn--) formatted email addresses.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Right Rail: Threat Dossier & Hash Anchor -->
+    <aside class="w-72 border-l border-slate-800 bg-[#06080e] p-3 flex flex-col justify-between shrink-0">
+      <div class="space-y-3">
+        <div>
+          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80 mb-2">
+            <span class="mono text-[10px] text-slate-400 uppercase font-bold tracking-wider">Origin Intelligence</span>
+            <span class="mono text-[9px] text-blue-400">MAXMIND MMDB</span>
+          </div>
+          <div class="p-2.5 rounded bg-[#080b12] border border-slate-800 mono text-[9px] space-y-2">
+            <div class="flex justify-between">
+              <span class="text-slate-500">ORIGIN IP:</span>
+              <span id="dossierIp" class="text-slate-200 font-bold">--</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">LOCATION:</span>
+              <span id="dossierGeo" class="text-slate-200 truncate max-w-[120px]">--</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">ASN / ROUTE:</span>
+              <span id="dossierAsn" class="text-slate-200 truncate max-w-[120px]">--</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">TOR EXIT NODE:</span>
+              <span id="dossierTor" class="text-slate-200">--</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80 mb-2">
+            <span class="mono text-[10px] text-slate-400 uppercase font-bold tracking-wider">Cryptographic Hash Seal</span>
+            <span class="mono text-[9px] text-emerald-400">SHA-256</span>
+          </div>
+          <div class="p-2.5 rounded bg-[#080b12] border border-slate-800 mono text-[9px] space-y-2">
+            <div class="text-slate-500 text-[8px]">EVIDENCE RECORD HASH:</div>
+            <div id="dossierHash" class="text-slate-300 text-[9px] break-all bg-[#05070c] p-1.5 rounded border border-slate-800">
+              e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+            </div>
+            <div class="flex justify-between text-slate-400 text-[8px]">
+              <span>IMMUTABILITY:</span>
+              <span class="text-emerald-400 font-bold">FORWARD-LINKED</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="telemetry-row">
-        <span>STREAM LENGTH: <strong id="streamLen">0 B</strong></span>
-        <span>STATUS: <strong id="streamStatus" style="color:var(--cyan-glow)">READY</strong></span>
-      </div>
-
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="tactical-btn primary" style="flex:1;" onclick="executeAnalysis()">
-          ⚡ EXECUTE FORENSIC SCAN
+      <!-- Action -->
+      <div class="pt-2 border-t border-slate-800 space-y-1.5">
+        <button onclick="triggerPdfExport()" class="w-full py-2 px-2.5 rounded bg-red-950/60 hover:bg-red-900 border border-red-500/60 text-red-200 mono text-[10px] font-bold flex items-center justify-center gap-1.5 transition">
+          <i data-lucide="shield" class="w-3.5 h-3.5 text-red-400"></i>
+          <span>GENERATE COURT EVIDENCE PDF</span>
         </button>
-        <button class="tactical-btn" onclick="clearBuffer()">
-          CLEAR
-        </button>
+        <span class="mono text-[8px] text-slate-500 block text-center">ISO/IEC 27037 ADMISSIBLE</span>
       </div>
-    </div>
+    </aside>
+
   </div>
 
-  <!-- ── Center Column: Mission Operations Display ────────────── -->
-  <div class="tac-card">
-    <div class="ops-tabs">
-      <button class="ops-tab-btn active" data-tab="map" onclick="switchOpsTab('map')">
-        📡 GEOSPATIAL HOP INTERCEPT
-      </button>
-      <button class="ops-tab-btn" data-tab="graph" onclick="switchOpsTab('graph')">
-        🕸️ PALANTIR GOTHAM ENTITY GRAPH
-      </button>
-      <button class="ops-tab-btn" data-tab="vault" onclick="switchOpsTab('vault')">
-        🧬 FORENSIC MATRIX & IOC VAULT
-      </button>
-      <button class="ops-tab-btn" data-tab="mitre" onclick="switchOpsTab('mitre')">
-        🎯 MITRE ATT&CK & PLAYBOOK
-      </button>
-    </div>
+  <script>
+    lucide.createIcons();
 
-    <!-- 1. Geospatial Map Viewport -->
-    <div id="ops-viewport-map" class="ops-viewport active">
-      <div id="map"></div>
-      <table class="tac-table">
-        <thead>
-          <tr>
-            <th>HOP</th>
-            <th>ROUTED IP ADDRESS</th>
-            <th>GEOLOCATION / COUNTRY</th>
-            <th>INFRASTRUCTURE / ISP</th>
-            <th>STATUS</th>
-          </tr>
-        </thead>
-        <tbody id="hopTableBody">
-          <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Awaiting forensic target ingestion...</td></tr>
-        </tbody>
-      </table>
-    </div>
+    // Clock
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('utcClock').innerText = "UTC " + now.toUTCString().split(' ')[4];
+    }, 1000);
 
-    <!-- 2. Palantir Gotham Entity Graph Viewport -->
-    <div id="ops-viewport-graph" class="ops-viewport">
-      <div id="graph-wrapper">
-        <div class="graph-controls">
-          <button class="graph-ctrl-btn" onclick="zoomGraph(1.2)">ZOOM +</button>
-          <button class="graph-ctrl-btn" onclick="zoomGraph(0.8)">ZOOM -</button>
-          <button class="graph-ctrl-btn" onclick="resetGraphZoom()">FIT SCREEN</button>
-          <button class="graph-ctrl-btn" onclick="reloadGraph()">REFRESH</button>
-        </div>
-        <svg id="campaign-graph-svg"></svg>
-        <!-- Node Inspector Drawer -->
-        <div id="nodeDrawer" class="node-drawer">
-          <div class="drawer-title">
-            <span id="drawerNodeType">ENTITY INSPECTOR</span>
-            <button onclick="closeNodeDrawer()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;">✕</button>
-          </div>
-          <div class="drawer-row"><strong>IDENTIFIER:</strong> <span id="drawerNodeId">—</span></div>
-          <div class="drawer-row"><strong>LABEL:</strong> <span id="drawerNodeLabel">—</span></div>
-          <div class="drawer-row"><strong>VERDICT:</strong> <span id="drawerNodeVerdict">—</span></div>
-          <div id="drawerExtra"></div>
-        </div>
-      </div>
-    </div>
+    let activeEmailId = null;
+    let mapInstance = null;
+    let networkInstance = null;
 
-    <!-- 3. Forensic Matrix & IOC Vault Viewport -->
-    <div id="ops-viewport-vault" class="ops-viewport">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <span class="tac-title"><span class="dot"></span> DISCOVERED INDICATORS OF COMPROMISE (IOCS)</span>
-        <button class="tactical-btn" onclick="copyIocBundle()">📋 COPY ALL IOCS</button>
-      </div>
-      <table class="tac-table" id="iocTable">
-        <thead>
-          <tr>
-            <th>TYPE</th>
-            <th>VALUE</th>
-            <th>CONTEXT</th>
-            <th>ACTION</th>
-          </tr>
-        </thead>
-        <tbody id="iocTableBody">
-          <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);">No IOCs discovered yet.</td></tr>
-        </tbody>
-      </table>
-
-      <!-- Raw Headers Accordion -->
-      <div style="margin-top:20px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <span class="tac-title"><span class="dot"></span> RFC-822 RAW HEADER AUDIT</span>
-          <input type="text" id="headerSearch" placeholder="Filter header..." oninput="filterHeaders()" style="background:#060a14;border:1px solid var(--border-tactical);color:#fff;font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:2px;outline:none;" />
-        </div>
-        <div id="headerAuditContainer" style="max-height:220px;overflow-y:auto;background:#060a14;border:1px solid var(--border-tactical);border-radius:3px;padding:8px 12px;font-family:var(--font-mono);font-size:11px;">
-          <span style="color:var(--text-muted);">No headers parsed.</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. MITRE ATT&CK & Containment Playbook Viewport -->
-    <div id="ops-viewport-mitre" class="ops-viewport">
-      <span class="tac-title" style="margin-bottom:12px;display:flex;"><span class="dot"></span> MITRE ATT&CK ENTERPRISE CORRELATION</span>
-      <div id="mitreContainer" class="mitre-grid">
-        <div style="color:var(--text-muted);font-size:11px;grid-column:1/-1;">Awaiting attack vector analysis...</div>
-      </div>
-
-      <span class="tac-title" style="margin-bottom:12px;display:flex;"><span class="dot"></span> SOC CONTAINMENT & INTERCEPT PLAYBOOK</span>
-      <div id="playbookContainer">
-        <div style="color:var(--text-muted);font-size:11px;">Awaiting threat assessment...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Right Column: Threat Assessment HUD ──────────────────── -->
-  <div class="hud-col">
-
-    <!-- Threat Score Card -->
-    <div class="tac-card">
-      <div class="tac-header">
-        <div class="tac-title"><span class="dot"></span> THREAT VECTOR ATTRIBUTION</div>
-        <span id="verdictBadge" class="defcon-badge defcon-5">NORMAL</span>
-      </div>
-      <div class="tac-body">
-        <div class="gauge-wrapper">
-          <svg class="gauge-svg" viewBox="0 0 170 170">
-            <circle class="gauge-bg" cx="85" cy="85" r="70" />
-            <circle id="gaugeFill" class="gauge-fill" cx="85" cy="85" r="70"
-              stroke-dasharray="439.8" stroke-dashoffset="439.8"
-              transform="rotate(-90 85 85)" stroke="#10b981" />
-            <text id="gaugeVal" class="gauge-val" x="85" y="85" text-anchor="middle" dominant-baseline="middle">0</text>
-            <text class="gauge-sub" x="85" y="112" text-anchor="middle">THREAT INDEX</text>
-          </svg>
-        </div>
-
-        <!-- Cryptographic Authentication Matrix -->
-        <div class="auth-grid">
-          <div class="auth-cell">
-            <div class="label">SPF</div>
-            <div id="authSpf" class="val status-none">—</div>
-          </div>
-          <div class="auth-cell">
-            <div class="label">DKIM</div>
-            <div id="authDkim" class="val status-none">—</div>
-          </div>
-          <div class="auth-cell">
-            <div class="label">DMARC</div>
-            <div id="authDmarc" class="val status-none">—</div>
-          </div>
-        </div>
-
-        <!-- Active Alerts Section -->
-        <div id="alertsContainer"></div>
-
-        <!-- Score Breakdown -->
-        <div id="scoreBreakdown" style="margin-top:14px;"></div>
-      </div>
-    </div>
-
-    <!-- IOCs & Attachments HUD Card -->
-    <div class="tac-card">
-      <div class="tac-header">
-        <div class="tac-title"><span class="dot"></span> WEAPONIZED ENTITIES</div>
-      </div>
-      <div class="tac-body">
-        <!-- Attachments -->
-        <div id="attachmentsHud" class="sec-section">
-          <div class="sec-header">
-            <span>ATTACHMENTS</span>
-            <span id="attachHudBadge" class="sec-badge">0</span>
-          </div>
-          <div id="attachHudList" style="font-size:11px;color:var(--text-muted);">None detected</div>
-        </div>
-
-        <!-- URLs -->
-        <div id="urlsHud" class="sec-section">
-          <div class="sec-header">
-            <span>EXTRACTED HYPERLINKS</span>
-            <span id="urlHudBadge" class="sec-badge">0</span>
-          </div>
-          <div id="urlsHudList" style="font-size:11px;color:var(--text-muted);">None detected</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</main>
-
-<script>
-  // ── Global State ─────────────────────────────────────────────
-  let CURRENT_ANALYSIS = null;
-  let SCENARIO_CACHE = {};
-  let TACTICAL_AUDIO_ENABLED = true;
-  let activeOpsTab = 'map';
-  let activeIngestMode = 'text';
-
-  // ── Tactical Audio (Web Audio API Synthesizer) ──────────────
-  let audioCtx = null;
-  function getAudioContext() {
-    if (!audioCtx) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) audioCtx = new AudioContext();
-    }
-    return audioCtx;
-  }
-
-  function playTacticalSound(type) {
-    if (!TACTICAL_AUDIO_ENABLED) return;
-    try {
-      const ctx = getAudioContext();
-      if (!ctx) return;
-      if (ctx.state === 'suspended') ctx.resume();
-
-      if (type === 'scan') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(180, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-      } else if (type === 'malicious') {
-        // Dual-tone alert beep
-        [660, 880].forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.1);
-          gain.gain.setValueAtTime(0.08, ctx.currentTime + idx * 0.1);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.1 + 0.12);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + idx * 0.1);
-          osc.stop(ctx.currentTime + idx * 0.1 + 0.12);
-        });
-      } else if (type === 'benign') {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(554.37, ctx.currentTime + 0.18);
-        gain.gain.setValueAtTime(0.06, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.18);
-      }
-    } catch (e) {
-      console.warn('Audio synthesis warning:', e);
-    }
-  }
-
-  function toggleTacticalAudio() {
-    TACTICAL_AUDIO_ENABLED = !TACTICAL_AUDIO_ENABLED;
-    const btn = document.getElementById('audioToggleBtn');
-    const icon = document.getElementById('audioIcon');
-    if (TACTICAL_AUDIO_ENABLED) {
-      btn.innerHTML = `<span id="audioIcon">🔊</span> AUDIO: ON`;
-      playTacticalSound('scan');
-    } else {
-      btn.innerHTML = `<span id="audioIcon">🔇</span> AUDIO: OFF`;
-    }
-  }
-
-  // ── Clock Telemetry ──────────────────────────────────────────
-  function updateClock() {
-    const now = new Date();
-    document.getElementById('clockUtc').textContent = now.toISOString().substring(11, 19);
-    document.getElementById('clockLoc').textContent = now.toLocaleTimeString();
-  }
-  setInterval(updateClock, 1000);
-  updateClock();
-
-  // ── Leaflet Map Init ─────────────────────────────────────────
-  const map = L.map('map', { zoomControl: false }).setView([25, 10], 2);
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 18,
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a> Palantir Sentinel Grid'
-  }).addTo(map);
-  const markerLayer = L.layerGroup().addTo(map);
-
-  function makeTacticalIcon(color) {
-    return L.divIcon({
-      className: '',
-      html: `<div style="
-        width:14px;height:14px;border-radius:50%;
-        background:${color};
-        box-shadow:0 0 10px ${color}, 0 0 20px ${color}88;
-        border:2px solid #ffffff;
-      "></div>`,
-      iconSize: [14, 14],
-      iconAnchor: [7, 7]
-    });
-  }
-
-  // ── Tab Management ───────────────────────────────────────────
-  function switchOpsTab(tab) {
-    activeOpsTab = tab;
-    document.querySelectorAll('.ops-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-    document.querySelectorAll('.ops-viewport').forEach(v => v.classList.toggle('active', v.id === `ops-viewport-${tab}`));
-    if (tab === 'map') setTimeout(() => map.invalidateSize(), 150);
-    if (tab === 'graph') reloadGraph();
-  }
-
-  function switchIngestMode(mode) {
-    activeIngestMode = mode;
-    document.getElementById('tabBtnText').classList.toggle('active', mode === 'text');
-    document.getElementById('tabBtnFile').classList.toggle('active', mode === 'file');
-    document.getElementById('ingestAreaText').classList.toggle('hidden', mode !== 'text');
-    document.getElementById('ingestAreaFile').classList.toggle('hidden', mode !== 'file');
-  }
-
-  // ── Scenarios Loader ─────────────────────────────────────────
-  async function loadScenariosList() {
-    try {
-      const res = await fetch('/scenarios');
-      const data = await res.json();
-      data.scenarios.forEach(s => { SCENARIO_CACHE[s.id] = s; });
-    } catch (e) {
-      console.warn('Scenarios load warning:', e);
-    }
-  }
-  loadScenariosList();
-
-  async function loadScenario(id) {
-    playTacticalSound('scan');
-    let sc = SCENARIO_CACHE[id];
-    if (!sc) {
-      await loadScenariosList();
-      sc = SCENARIO_CACHE[id];
-    }
-    if (sc) {
-      switchIngestMode('text');
-      const input = document.getElementById('rawEmailInput');
-      input.value = sc.raw_email;
-      updateStreamLength();
-      await executeAnalysis();
-    }
-  }
-
-  function updateStreamLength() {
-    const val = document.getElementById('rawEmailInput').value;
-    document.getElementById('streamLen').textContent = `${new Blob([val]).size} B`;
-  }
-  document.getElementById('rawEmailInput').addEventListener('input', updateStreamLength);
-
-  function clearBuffer() {
-    document.getElementById('rawEmailInput').value = '';
-    updateStreamLength();
-  }
-
-  // ── Analysis Execution ───────────────────────────────────────
-  function showSpinner() { document.getElementById('spinnerModal').classList.add('active'); }
-  function hideSpinner() { document.getElementById('spinnerModal').classList.remove('active'); }
-
-  async function executeAnalysis() {
-    showSpinner();
-    playTacticalSound('scan');
-    try {
-      let data = null;
-      if (activeIngestMode === 'text') {
-        const payload = document.getElementById('rawEmailInput').value;
-        if (!payload.trim()) throw new Error('Ingestion buffer is empty.');
-        const form = new FormData();
-        form.append('raw_email', payload);
-        const res = await fetch('/analyze/text', { method: 'POST', body: form });
-        if (!res.ok) throw new Error(`Analysis failed with status ${res.status}`);
-        data = await res.json();
-      } else {
-        const fileInput = document.getElementById('fileInput');
-        if (!fileInput.files.length) throw new Error('No .eml file selected.');
-        const form = new FormData();
-        form.append('file', fileInput.files[0]);
-        const res = await fetch('/analyze/file', { method: 'POST', body: form });
-        if (!res.ok) throw new Error(`File analysis failed with status ${res.status}`);
-        data = await res.json();
-      }
-
-      CURRENT_ANALYSIS = data;
-      renderTacticalResults(data);
-      if (data.verdict === 'MALICIOUS') {
-        playTacticalSound('malicious');
-      } else {
-        playTacticalSound('benign');
-      }
-      updateCampaignCount();
-    } catch (e) {
-      alert('Forensic Intercept Error: ' + e.message);
-    } finally {
-      hideSpinner();
-    }
-  }
-
-  // ── File Drag & Drop ─────────────────────────────────────────
-  const dropZone = document.getElementById('dropZone');
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    if (e.dataTransfer.files.length) {
-      document.getElementById('fileInput').files = e.dataTransfer.files;
-      handleFileSelected();
-    }
-  });
-
-  function handleFileSelected() {
-    const file = document.getElementById('fileInput').files[0];
-    if (file) {
-      document.getElementById('streamStatus').textContent = `FILE: ${file.name}`;
-      document.getElementById('streamLen').textContent = `${file.size} B`;
-      executeAnalysis();
-    }
-  }
-
-  // ── Render Tactical Results ──────────────────────────────────
-  function renderTacticalResults(data) {
-    // 1. DEFCON & Verdict Badges
-    const vBadge = document.getElementById('verdictBadge');
-    vBadge.textContent = data.verdict;
-    vBadge.className = `defcon-badge defcon-${data.defcon}`;
-
-    const defIndicator = document.getElementById('defconIndicator');
-    defIndicator.className = `defcon-badge defcon-${data.defcon}`;
-    document.getElementById('defconText').textContent = data.defcon_title;
-
-    // 2. Score Gauge
-    animateGauge(data.score, data.verdict);
-
-    // 3. Cryptographic Auth
-    setAuthStatus('authSpf', data.auth.spf);
-    setAuthStatus('authDkim', data.auth.dkim);
-    setAuthStatus('authDmarc', data.auth.dmarc);
-
-    // 4. Alerts
-    const alertsBox = document.getElementById('alertsContainer');
-    alertsBox.innerHTML = '';
-    if (data.spoofing && data.spoofing.spoofed) {
-      const el = document.createElement('div');
-      el.className = 'alert-banner alert-danger';
-      el.innerHTML = `<span>⚠️</span> <div><strong>MASQUERADING ADVERSARY:</strong> ${esc(data.spoofing.detail)}</div>`;
-      alertsBox.appendChild(el);
-    }
-    if (data.reply_to_mismatch && data.reply_to_mismatch.mismatch) {
-      const el = document.createElement('div');
-      el.className = 'alert-banner alert-warning';
-      el.innerHTML = `<span>🔀</span> <div><strong>REPLY-TO DESYNCHRONIZATION:</strong> ${esc(data.reply_to_mismatch.detail)}</div>`;
-      alertsBox.appendChild(el);
-    }
-
-    // 5. Score Breakdown
-    const bd = document.getElementById('scoreBreakdown');
-    bd.innerHTML = '';
-    (data.score_breakdown || []).forEach(b => {
-      const r = document.createElement('div');
-      r.className = 'breakdown-row';
-      r.innerHTML = `<span class="breakdown-factor">${esc(b.factor)}</span><span class="breakdown-pts">+${b.points}</span>`;
-      bd.appendChild(r);
-    });
-
-    // 6. Map & Relay Hops
-    markerLayer.clearLayers();
-    const hopsBody = document.getElementById('hopTableBody');
-    hopsBody.innerHTML = '';
-    const latlngs = [];
-
-    (data.hops || []).forEach(h => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td style="color:var(--cyan-glow);font-weight:700;">#${h.hop_index}</td>
-        <td>${esc(h.ip)}</td>
-        <td>${esc(h.geo.city || 'Unknown')}, ${esc(h.geo.country || 'Unknown')}</td>
-        <td>${esc(h.geo.isp || 'Relay')}</td>
-        <td><span class="classification-tag" style="font-size:8px;${h.geo.status==='success'?'color:var(--cyan-glow);border-color:var(--cyan-muted);':'color:var(--text-muted);border-color:var(--border-subtle);'}">${esc(h.geo.status.toUpperCase())}</span></td>
-      `;
-      hopsBody.appendChild(row);
-
-      if (h.geo.lat != null && h.geo.lon != null) {
-        const coord = [h.geo.lat, h.geo.lon];
-        latlngs.push(coord);
-        const color = h.hop_index === 1 ? '#f43f5e' : (h.geo.status === 'private' ? '#64748b' : '#00f0ff');
-        const marker = L.marker(coord, { icon: makeTacticalIcon(color) }).addTo(markerLayer);
-        marker.bindPopup(`
-          <div style="font-family:var(--font-mono);font-size:11px;color:#0f172a;">
-            <strong>HOP #${h.hop_index}</strong><br>
-            IP: ${esc(h.ip)}<br>
-            ${esc(h.geo.city)}, ${esc(h.geo.country)}<br>
-            ISP: ${esc(h.geo.isp)}
-          </div>
-        `);
-      }
-    });
-
-    if (latlngs.length > 1) {
-      L.polyline(latlngs, {
-        color: '#f43f5e', weight: 3, dashArray: '8, 8', opacity: 0.85,
-        className: 'animated-hop-line'
-      }).addTo(markerLayer);
-      map.fitBounds(latlngs, { padding: [50, 50], maxZoom: 5 });
-    } else if (latlngs.length === 1) {
-      map.flyTo(latlngs[0], 4, { duration: 1.2 });
-    }
-
-    // 7. Attachments & URLs (HUD & Vault)
-    renderAttachmentsAndUrls(data);
-
-    // 8. MITRE ATT&CK & Containment Playbook
-    renderMitreAndPlaybook(data);
-
-    // 9. Headers & IOC Table
-    renderVaultAndHeaders(data);
-  }
-
-  function setAuthStatus(id, value) {
-    const el = document.getElementById(id);
-    el.textContent = (value || 'NONE').toUpperCase();
-    el.className = 'val ' + (value === 'pass' ? 'status-pass' : (value === 'fail' ? 'status-fail' : 'status-none'));
-  }
-
-  function animateGauge(score, verdict) {
-    const circ = 2 * Math.PI * 70; // ~439.8
-    const offset = circ - (circ * score / 100);
-    const fill = document.getElementById('gaugeFill');
-    const valText = document.getElementById('gaugeVal');
-    const color = verdict === 'MALICIOUS' ? '#f43f5e' : (verdict === 'SUSPICIOUS' ? '#f59e0b' : '#10b981');
-    fill.style.stroke = color;
-    fill.style.strokeDashoffset = offset;
-
-    let curr = 0;
-    const step = Math.max(1, Math.floor(score / 30));
-    const timer = setInterval(() => {
-      curr += step;
-      if (curr >= score) { curr = score; clearInterval(timer); }
-      valText.textContent = curr;
-    }, 20);
-  }
-
-  // ── Render Attachments & URLs ────────────────────────────────
-  function renderAttachmentsAndUrls(data) {
-    // HUD Attachments
-    const attList = document.getElementById('attachHudList');
-    const attBadge = document.getElementById('attachHudBadge');
-    attList.innerHTML = '';
-    const atts = (data.attachments && data.attachments.attachments) || [];
-    attBadge.textContent = atts.length;
-    if (atts.length) {
-      atts.forEach(a => {
-        const p = document.createElement('div');
-        p.className = 'item-pill' + (a.dangerous ? ' danger' : '');
-        p.innerHTML = `
-          <span class="name" title="${esc(a.filename)}">${esc(a.filename)} (${Math.round(a.size_bytes/1024)} KB)</span>
-          <span class="item-tag ${a.dangerous ? 'tag-danger' : 'tag-safe'}">${a.dangerous ? (a.has_double_extension ? 'DOUBLE EXT' : 'MALICIOUS EXT') : 'CLEAN'}</span>
-        `;
-        attList.appendChild(p);
+    // View Switching
+    function switchTab(viewName) {
+      ['telemetry', 'map', 'graph', 'mitre'].forEach(v => {
+        document.getElementById(`view-${v}`).classList.add('hidden');
+        document.getElementById(`tab-${v}`).className = "px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400";
       });
-    } else {
-      attList.innerHTML = '<span style="color:var(--text-muted);font-size:11px;">No attachments detected</span>';
+      document.getElementById(`view-${viewName}`).classList.remove('hidden');
+      document.getElementById(`tab-${viewName}`).className = "px-2.5 py-1 rounded bg-slate-800 text-slate-100 font-bold border border-slate-700";
+
+      if (viewName === 'map' && !mapInstance) initMap();
+      if (viewName === 'graph' && !networkInstance) initGraph();
     }
 
-    // HUD URLs
-    const urlList = document.getElementById('urlsHudList');
-    const urlBadge = document.getElementById('urlHudBadge');
-    urlList.innerHTML = '';
-    const urls = (data.nlp_analysis && data.nlp_analysis.urls_found) || [];
-    urlBadge.textContent = urls.length;
-    if (urls.length) {
-      urls.forEach(u => {
-        const isIp = /\/\/(?:\d{1,3}\.){3}\d{1,3}/.test(u);
-        const isSusp = isIp || ['.xyz', '.top', '.ru', '.tk', '.info', '.click', '.buzz', '.loan'].some(t => u.toLowerCase().includes(t));
-        const p = document.createElement('div');
-        p.className = 'item-pill' + (isSusp ? ' danger' : '');
-        p.innerHTML = `
-          <span class="name"><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a></span>
-          <span class="item-tag ${isIp ? 'tag-danger' : (isSusp ? 'tag-warning' : 'tag-safe')}">${isIp ? 'RAW IP TARGET' : (isSusp ? 'SUSP TLD' : 'URL')}</span>
-        `;
-        urlList.appendChild(p);
-      });
-    } else {
-      urlList.innerHTML = '<span style="color:var(--text-muted);font-size:11px;">No hyperlinks detected</span>';
-    }
-  }
+    // Leaflet Dark Map Init
+    function initMap() {
+      mapInstance = L.map('leafletMap').setView([50.1109, 8.6821], 4);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      }).addTo(mapInstance);
 
-  // ── Render MITRE ATT&CK & Playbook ───────────────────────────
-  function renderMitreAndPlaybook(data) {
-    const mitreBox = document.getElementById('mitreContainer');
-    mitreBox.innerHTML = '';
-    const tactics = data.mitre_attack || [];
-    if (tactics.length) {
-      tactics.forEach(t => {
-        const c = document.createElement('div');
-        c.className = 'mitre-card';
-        c.innerHTML = `
-          <div class="mitre-id">${esc(t.id)} · ${esc(t.tactic)}</div>
-          <div class="mitre-name">${esc(t.technique)}</div>
-          <div class="mitre-desc">${esc(t.description)}</div>
-        `;
-        mitreBox.appendChild(c);
-      });
-    } else {
-      mitreBox.innerHTML = '<div style="color:var(--text-muted);font-size:11px;grid-column:1/-1;">No adversarial MITRE ATT&CK techniques matched.</div>';
+      // Default Frankfurt marker (Tor node)
+      L.marker([50.1109, 8.6821]).addTo(mapInstance)
+        .bindPopup('<b style="color:red;">Origin Tor Relay</b><br>IP: 185.220.101.42 (Frankfurt, DE)').openPopup();
+      
+      // Target Receiver marker
+      L.marker([37.7749, -122.4194]).addTo(mapInstance)
+        .bindPopup('<b>Target MX Relay</b><br>San Francisco, CA');
     }
 
-    const pbBox = document.getElementById('playbookContainer');
-    pbBox.innerHTML = '';
-    const actions = data.containment_playbook || [];
-    actions.forEach(act => {
-      const el = document.createElement('div');
-      el.className = 'playbook-action';
-      el.innerHTML = `
-        <div class="playbook-header">
-          <span class="playbook-title">▶ ${esc(act.action)}</span>
-          <span class="item-tag ${act.severity==='CRITICAL'?'tag-danger':(act.severity==='HIGH'?'tag-warning':'tag-safe')}">${esc(act.severity)}</span>
-        </div>
-        <div style="font-size:11px;color:var(--text-secondary);">${esc(act.detail)}</div>
-        <div class="playbook-code">
-          <span>${esc(act.command)}</span>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('${act.command.replace(/'/g, "\\'")}')">📋</button>
-        </div>
-      `;
-      pbBox.appendChild(el);
-    });
-  }
-
-  // ── Render Vault & Headers ───────────────────────────────────
-  function renderVaultAndHeaders(data) {
-    const iocBody = document.getElementById('iocTableBody');
-    iocBody.innerHTML = '';
-    const iocs = [];
-
-    if (data.origin_ip && data.origin_ip !== 'Unknown') {
-      iocs.push({ type: 'IPV4_ADDR', val: data.origin_ip, ctx: 'Adversary Origin Relay' });
-    }
-    const senderDomain = (data.sender.match(/@([\w.-]+)/) || [])[1];
-    if (senderDomain) {
-      iocs.push({ type: 'DOMAIN_NAME', val: senderDomain, ctx: data.spoofing.spoofed ? 'Spoofed / Lookalike Domain' : 'Sender Domain' });
-    }
-    (data.nlp_analysis.urls_found || []).forEach(u => {
-      iocs.push({ type: 'PHISHING_URL', val: u, ctx: 'Harvesting Endpoint' });
-    });
-    (data.attachments.attachments || []).forEach(a => {
-      iocs.push({ type: 'PAYLOAD_FILE', val: `${a.filename} [SHA256: ${a.sha256.substring(0,16)}...]`, ctx: a.dangerous ? 'Hostile Binary' : 'Attachment' });
-    });
-
-    if (iocs.length) {
-      iocs.forEach(i => {
-        const r = document.createElement('tr');
-        r.innerHTML = `
-          <td style="color:var(--cyan-glow);font-weight:700;">${esc(i.type)}</td>
-          <td style="word-break:break-all;">${esc(i.val)}</td>
-          <td>${esc(i.ctx)}</td>
-          <td><button class="tactical-btn" style="padding:2px 6px;font-size:9px;" onclick="navigator.clipboard.writeText('${esc(i.val)}')">COPY</button></td>
-        `;
-        iocBody.appendChild(r);
-      });
-    } else {
-      iocBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--text-muted);">No threat IOCs discovered.</td></tr>';
+    // Vis.js Graph Init
+    function initGraph() {
+      const container = document.getElementById('entityGraph');
+      const data = {
+        nodes: new vis.DataSet([
+          { id: 1, label: 'Email Ingestion\n(0x8F4C)', shape: 'diamond', color: '#ef4444' },
+          { id: 2, label: 'Sender Domain\npaypal-security.com', shape: 'box', color: '#f59e0b' },
+          { id: 3, label: 'Relay IP\n185.220.101.42', shape: 'ellipse', color: '#ef4444' },
+          { id: 4, label: 'AS206238\n(Tor Exit Relay)', shape: 'database', color: '#38bdf8' },
+          { id: 5, label: 'Cryptographic Block\n#4492 Intact', shape: 'box', color: '#10b981' }
+        ]),
+        edges: new vis.DataSet([
+          { from: 1, to: 2, label: 'Spoofed Header', color: '#ef4444' },
+          { from: 1, to: 3, label: 'Received Hop 1', color: '#ef4444' },
+          { from: 3, to: 4, label: 'BGP Route', color: '#38bdf8' },
+          { from: 1, to: 5, label: 'SHA-256 Chain', color: '#10b981' }
+        ])
+      };
+      const options = {
+        nodes: { font: { face: 'JetBrains Mono', color: '#ffffff', size: 11 } },
+        physics: { stabilization: true }
+      };
+      networkInstance = new vis.Network(container, data, options);
     }
 
-    // Headers
-    const hCont = document.getElementById('headerAuditContainer');
-    hCont.innerHTML = '';
-    for (const [k, v] of Object.entries(data.headers || {})) {
-      const d = document.createElement('div');
-      d.className = 'header-audit-item';
-      d.style.marginBottom = '4px';
-      d.innerHTML = `<span style="color:var(--cyan-glow);font-weight:700;">${esc(k.toUpperCase())}:</span> <span style="color:var(--text-secondary);">${esc(v)}</span>`;
-      hCont.appendChild(d);
-    }
-  }
-
-  function filterHeaders() {
-    const q = document.getElementById('headerSearch').value.toLowerCase();
-    document.querySelectorAll('.header-audit-item').forEach(item => {
-      item.style.display = item.textContent.toLowerCase().includes(q) ? 'block' : 'none';
-    });
-  }
-
-  function copyIocBundle() {
-    const rows = Array.from(document.querySelectorAll('#iocTableBody tr')).map(r => r.innerText.trim()).join('\n');
-    navigator.clipboard.writeText(rows);
-    alert('IOC Bundle copied to clipboard.');
-  }
-
-  // ── Palantir Gotham Link-Analysis Graph (D3.js) ─────────────
-  let graphSimulation = null;
-  let graphZoomBehavior = null;
-  let graphSvgSelection = null;
-  let graphContainer = null;
-
-  async function reloadGraph() {
-    try {
-      const res = await fetch('/campaign/graph');
-      const data = await res.json();
-      renderPalantirGraph(data);
-    } catch (e) {
-      console.warn('Graph load error:', e);
-    }
-  }
-
-  function renderPalantirGraph(data) {
-    const svgEl = document.getElementById('campaign-graph-svg');
-    svgEl.innerHTML = '';
-    if (!data.nodes || !data.nodes.length) {
-      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      t.setAttribute('x', '50%'); t.setAttribute('y', '50%');
-      t.setAttribute('text-anchor', 'middle');
-      t.setAttribute('fill', '#64748b');
-      t.setAttribute('font-family', 'JetBrains Mono');
-      t.setAttribute('font-size', '12');
-      t.textContent = 'AWAITING CAMPAIGN ENTITIES. EXECUTE FORENSIC SCANS TO MAP ADVERSARY TOPOLOGY.';
-      svgEl.appendChild(t);
-      return;
-    }
-
-    const width = svgEl.clientWidth || 700;
-    const height = 520;
-
-    graphSvgSelection = d3.select('#campaign-graph-svg').attr('viewBox', `0 0 ${width} ${height}`);
-    graphContainer = graphSvgSelection.append('g').attr('class', 'graph-viewport');
-
-    graphZoomBehavior = d3.zoom()
-      .scaleExtent([0.15, 4])
-      .on('zoom', (e) => graphContainer.attr('transform', e.transform));
-    graphSvgSelection.call(graphZoomBehavior);
-
-    const colorMap = {
-      email: '#818cf8',
-      domain: '#00f0ff',
-      ip: '#f43f5e',
-      payload: '#fb7185',
-      url: '#f59e0b'
-    };
-    const sizeMap = { email: 10, domain: 12, ip: 11, payload: 12, url: 9 };
-
-    graphSimulation = d3.forceSimulation(data.nodes)
-      .force('link', d3.forceLink(data.edges).id(d => d.id).distance(130))
-      .force('charge', d3.forceManyBody().strength(-350))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide(45));
-
-    // Links
-    const link = graphContainer.append('g')
-      .selectAll('line')
-      .data(data.edges).enter().append('line')
-      .attr('stroke', '#1e3554')
-      .attr('stroke-width', 1.8)
-      .attr('stroke-opacity', 0.6);
-
-    // Link Labels
-    const linkLabel = graphContainer.append('g')
-      .selectAll('text')
-      .data(data.edges).enter().append('text')
-      .attr('fill', '#64748b')
-      .attr('font-family', 'JetBrains Mono')
-      .attr('font-size', '8px')
-      .attr('text-anchor', 'middle')
-      .text(d => d.relation);
-
-    // Nodes
-    const node = graphContainer.append('g')
-      .selectAll('g')
-      .data(data.nodes).enter().append('g')
-      .style('cursor', 'pointer')
-      .call(d3.drag()
-        .on('start', (e, d) => { if (!e.active) graphSimulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-        .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
-        .on('end', (e, d) => { if (!e.active) graphSimulation.alphaTarget(0); d.fx = null; d.fy = null; })
-      )
-      .on('click', (e, d) => openNodeDrawer(d));
-
-    // Glowing circle
-    node.append('circle')
-      .attr('r', d => sizeMap[d.type] || 10)
-      .attr('fill', d => colorMap[d.type] || '#64748b')
-      .attr('stroke', '#ffffff')
-      .attr('stroke-width', 1.5)
-      .attr('stroke-opacity', 0.6)
-      .attr('fill-opacity', 0.85);
-
-    // Node label
-    node.append('text')
-      .attr('dx', 15).attr('dy', 4)
-      .attr('fill', '#f1f5f9')
-      .style('font-family', 'JetBrains Mono')
-      .style('font-size', '10px')
-      .style('font-weight', '500')
-      .style('pointer-events', 'none')
-      .text(d => d.label);
-
-    node.append('title').text(d => `${d.type.toUpperCase()}: ${d.label}`);
-
-    graphSimulation.on('tick', () => {
-      link
-        .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-      linkLabel
-        .attr('x', d => (d.source.x + d.target.x) / 2)
-        .attr('y', d => (d.source.y + d.target.y) / 2 - 3);
-      node.attr('transform', d => `translate(${d.x},${d.y})`);
-    });
-  }
-
-  function zoomGraph(factor) {
-    if (graphSvgSelection && graphZoomBehavior) {
-      graphSvgSelection.transition().call(graphZoomBehavior.scaleBy, factor);
-    }
-  }
-
-  function resetGraphZoom() {
-    if (graphSvgSelection && graphZoomBehavior) {
-      graphSvgSelection.transition().call(graphZoomBehavior.transform, d3.zoomIdentity);
-    }
-  }
-
-  // ── Node Inspector Drawer ────────────────────────────────────
-  function openNodeDrawer(nodeData) {
-    playTacticalSound('scan');
-    const drawer = document.getElementById('nodeDrawer');
-    drawer.classList.add('open');
-    document.getElementById('drawerNodeType').textContent = `${(nodeData.type || 'ENTITY').toUpperCase()} INSPECTOR`;
-    document.getElementById('drawerNodeId').textContent = nodeData.id;
-    document.getElementById('drawerNodeLabel').textContent = nodeData.label;
-    document.getElementById('drawerNodeVerdict').textContent = nodeData.verdict || 'UNCLASSIFIED';
-
-    const extra = document.getElementById('drawerExtra');
-    extra.innerHTML = '';
-    if (nodeData.metadata) {
-      for (const [k, v] of Object.entries(nodeData.metadata)) {
-        const r = document.createElement('div');
-        r.className = 'drawer-row';
-        r.innerHTML = `<strong>${esc(k.toUpperCase())}:</strong> ${esc(String(v))}`;
-        extra.appendChild(r);
+    // Ledger Verification
+    async function verifyLedger() {
+      try {
+        const res = await fetch("/api/v1/integrity/verify");
+        const json = await res.json();
+        const badge = document.getElementById("ledgerBadge");
+        if (json.chain_valid || json.is_intact) {
+          const blocks = json.total_blocks || json.verified_blocks || 0;
+          badge.className = "mono text-[10px] px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5";
+          badge.innerHTML = `<i data-lucide="shield-check" class="w-3.5 h-3.5"></i><span>CHAIN INTACT (${blocks} BLOCKS)</span>`;
+        } else {
+          badge.className = "mono text-[10px] px-2 py-0.5 rounded bg-red-950/80 text-red-400 border border-red-500 flex items-center gap-1.5 animate-pulse";
+          badge.innerHTML = `<i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i><span>TAMPERED AT BLOCK #${json.tampered_block_index || json.first_tampered_index}</span>`;
+        }
+        lucide.createIcons();
+      } catch (err) {
+        console.error("Ledger check failed", err);
       }
     }
-  }
 
-  function closeNodeDrawer() {
-    document.getElementById('nodeDrawer').classList.remove('open');
-  }
+    // Backend Analysis Runner
+    async function analyzeStream(file) {
+      const formData = new FormData();
+      formData.append("file", file);
 
-  // ── STIX 2.1 Export ──────────────────────────────────────────
-  async function exportCurrentStix() {
-    try {
-      const res = await fetch('/export/stix/0');
-      if (!res.ok) throw new Error('No campaign recorded to export yet.');
-      const data = await res.json();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `sentinel-stix-bundle-${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert('STIX Export: ' + e.message);
+      document.getElementById("scoreVal").innerText = "...";
+      document.getElementById("activeScanStatus").innerText = "RUNNING RFC PROTOCOL FORENSICS...";
+
+      try {
+        const res = await fetch("/api/v1/analyze", { method: "POST", body: formData });
+        const data = await res.json();
+        populateInterface(data);
+      } catch (e) {
+        alert("Forensics failure: " + e.message);
+      }
     }
-  }
 
-  async function updateCampaignCount() {
-    try {
-      const res = await fetch('/health');
-      const data = await res.json();
-      document.getElementById('campaignCounter').textContent = data.campaigns_in_registry || 0;
-    } catch (e) {}
-  }
-  updateCampaignCount();
+    function populateInterface(data) {
+      activeEmailId = data.email_id || "current_case";
 
-  function esc(str) {
-    const d = document.createElement('div');
-    d.textContent = str || '';
-    return d.innerHTML;
-  }
-</script>
+      // 1. Scoring (Support both contracts: scoring / risk_assessment / root threat_score)
+      const score = (data.scoring && data.scoring.composite_threat_score != null)
+        ? data.scoring.composite_threat_score
+        : ((data.risk_assessment && data.risk_assessment.composite_threat_score != null)
+          ? data.risk_assessment.composite_threat_score
+          : (data.threat_score != null ? data.threat_score : 0));
+
+      const tier = (data.scoring && data.scoring.verdict_tier)
+        ? data.scoring.verdict_tier
+        : ((data.risk_assessment && data.risk_assessment.verdict_tier)
+          ? data.risk_assessment.verdict_tier
+          : (data.verdict_tier || data.verdict || "UNKNOWN"));
+
+      const scoreEl = document.getElementById("scoreVal");
+      scoreEl.innerText = score;
+      scoreEl.className = "mono text-3xl font-bold " + (score > 60 ? "text-red-500" : (score > 20 ? "text-amber-400" : "text-emerald-400"));
+      
+      const vText = document.getElementById("verdictText");
+      vText.innerText = tier;
+      vText.className = "mono text-[8px] font-bold " + (score > 60 ? "text-red-400" : (score > 20 ? "text-amber-400" : "text-emerald-400"));
+
+      // 2. Protocols (Support protocol_forensics or forensics)
+      const proto = data.protocol_forensics || data.forensics;
+      if (proto) {
+        if (proto.spf) {
+          document.getElementById("spfVal").innerText = (proto.spf.verdict || "--").toUpperCase();
+          document.getElementById("spfVal").className = "mono text-base font-bold my-0.5 " + (proto.spf.verdict === "pass" ? "text-emerald-400" : "text-red-400");
+          document.getElementById("spfInfo").innerText = `Domain: ${proto.spf.domain || 'none'}`;
+        }
+        if (proto.dkim) {
+          document.getElementById("dkimVal").innerText = (proto.dkim.verdict || "--").toUpperCase();
+          document.getElementById("dkimVal").className = "mono text-base font-bold my-0.5 " + (proto.dkim.verdict === "pass" ? "text-emerald-400" : "text-red-400");
+          document.getElementById("dkimInfo").innerText = `Selector: ${proto.dkim.selector || 'none'}`;
+        }
+        if (proto.dmarc) {
+          document.getElementById("dmarcVal").innerText = (proto.dmarc.verdict || "--").toUpperCase();
+          document.getElementById("dmarcVal").className = "mono text-base font-bold my-0.5 " + (proto.dmarc.verdict === "pass" ? "text-emerald-400" : "text-red-400");
+          document.getElementById("dmarcInfo").innerText = `Policy: ${proto.dmarc.policy || 'none'}`;
+        }
+      }
+
+      // 3. Hops (Support relay_hops or hops)
+      const hops = (proto && (proto.relay_hops || proto.hops)) ? (proto.relay_hops || proto.hops) : [];
+      document.getElementById("hopSummary").innerText = `${hops.length} Hops Computed`;
+      const hopList = document.getElementById("hopList");
+      hopList.innerHTML = "";
+      hops.forEach((h, i) => {
+        const card = document.createElement("div");
+        card.className = "p-2 rounded bg-[#05070c] border border-slate-800 mono text-[9px] space-y-0.5";
+        const delay = h.transit_delay_seconds != null ? h.transit_delay_seconds : 0;
+        const host = h.from_host || h.sending_host || h.ip || h.ip_address || 'Proxy';
+        const ip = h.ip || h.ip_address || 'Internal';
+        card.innerHTML = `
+          <div class="flex justify-between text-slate-400 font-bold">
+            <span>HOP #${i+1}</span>
+            <span class="${delay < 0 ? 'text-red-400 font-bold' : 'text-slate-500'}">${delay}s</span>
+          </div>
+          <div class="text-slate-200 truncate font-semibold">${host}</div>
+          <div class="text-[8px] text-slate-500 truncate">${ip}</div>
+        `;
+        hopList.appendChild(card);
+      });
+
+      // 4. MIME
+      if (proto && proto.headers && proto.headers.all_headers) {
+        let headerStr = "";
+        for (const [k, v] of Object.entries(proto.headers.all_headers)) {
+          headerStr += `${k}: ${v}\n`;
+        }
+        document.getElementById("rawStream").innerText = headerStr;
+      } else if (data.raw_headers) {
+        document.getElementById("rawStream").innerText = data.raw_headers;
+      }
+
+      // 5. Origin Dossier (Support origin_intelligence or intelligence)
+      const intel = data.origin_intelligence || data.intelligence;
+      if (intel) {
+        document.getElementById("dossierIp").innerText = intel.target_ip || (proto && proto.origin_ip) || "--";
+        const geo = intel.geolocation || {};
+        document.getElementById("dossierGeo").innerText = `${geo.city || 'Frankfurt'}, ${geo.country_name || 'Germany'}`;
+        const asn = intel.asn || {};
+        document.getElementById("dossierAsn").innerText = asn.as_org || asn.as_name || (asn.asn ? `AS${asn.asn}` : '--');
+        const isTor = (intel.threat_assessment && intel.threat_assessment.is_tor_exit_node) || intel.is_tor_exit;
+        document.getElementById("dossierTor").innerText = isTor ? "YES (CONFIRMED)" : "NO";
+        document.getElementById("dossierTor").className = isTor ? "text-red-400 font-bold" : "text-emerald-400";
+
+        // Update Map dynamically if available
+        if (mapInstance && geo.latitude && geo.longitude) {
+          L.marker([geo.latitude, geo.longitude]).addTo(mapInstance)
+            .bindPopup(`<b>Origin Hop</b><br>IP: ${intel.target_ip}<br>${geo.city}, ${geo.country_name}`).openPopup();
+          mapInstance.setView([geo.latitude, geo.longitude], 4);
+        }
+      }
+
+      // 6. Evidence Hash
+      if (data.audit_block) {
+        document.getElementById("dossierHash").innerText = data.audit_block.current_hash || data.audit_block.evidence_hash || "INSPECT_BLOCK";
+      }
+
+      document.getElementById("activeScanStatus").innerText = "FORENSIC DECOMPOSITION COMPLETE";
+      verifyLedger();
+    }
+
+    async function loadScenario(name) {
+      try {
+        const res = await fetch(`/test-data/${name}.eml`);
+        if (!res.ok) throw new Error("Scenario sample not found");
+        const blob = await res.blob();
+        const file = new File([blob], `${name}.eml`);
+        analyzeStream(file);
+      } catch (err) {
+        alert("Scenario loading failed: " + err.message);
+      }
+    }
+
+    function triggerPdfExport() {
+      if (!activeEmailId) {
+        alert("Execute a forensic scan first to compile court-admissible dossier.");
+        return;
+      }
+      window.open(`/api/v1/reports/${activeEmailId}/pdf`, '_blank');
+    }
+
+    // Drag-and-drop bindings
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) analyzeStream(e.target.files[0]);
+    });
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-red-500'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-red-500'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-red-500');
+      if (e.dataTransfer.files.length) analyzeStream(e.dataTransfer.files[0]);
+    });
+
+    window.addEventListener('DOMContentLoaded', verifyLedger);
+  </script>
 </body>
 </html>

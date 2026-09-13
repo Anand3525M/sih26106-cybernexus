@@ -2,12 +2,29 @@ import sqlite3
 import json
 from pathlib import Path
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 from backend.config import settings
 from backend.ingestion.parser import IngestedEmail
-from backend.contracts.protocol_forensics import ProtocolForensicsResult
-from backend.contracts.origin_intelligence import OriginIntelligenceResult
+from backend.contracts.protocol_forensics import (
+    ProtocolForensicsResult,
+    MessageHeaders,
+    SpfContract,
+    DkimContract,
+    DmarcContract,
+    DmarcAlignmentContract,
+    ArcContract,
+    RelayHopContract,
+)
+from backend.contracts.origin_intelligence import (
+    OriginIntelligenceResult,
+    GeoLocationContract,
+    AsnContract,
+    HopTimingContract,
+    DomainIntelContract,
+    OriginThreatContract,
+    CacheStatusContract,
+)
 
 def get_db_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
     target_path = db_path or settings.DB_PATH
@@ -252,3 +269,175 @@ def list_cases(db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
 
     conn.close()
     return cases_result
+
+def get_email_analysis(email_id: str, db_path: Optional[Path] = None) -> Optional[Tuple[ProtocolForensicsResult, OriginIntelligenceResult]]:
+    """Retrieve stored email protocol forensics and origin intelligence from SQLite."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+
+    # Query matching email (exact or prefix)
+    cursor.execute("""
+        SELECT * FROM emails WHERE email_id = ? OR email_id LIKE ? LIMIT 1
+    """, (email_id, f"{email_id}%"))
+    email_row = cursor.fetchone()
+    if not email_row:
+        conn.close()
+        return None
+
+    full_email_id = email_row["email_id"]
+
+    cursor.execute("SELECT * FROM protocol_forensics WHERE email_id = ?", (full_email_id,))
+    proto_row = cursor.fetchone()
+
+    cursor.execute("SELECT * FROM origin_intelligence WHERE email_id = ?", (full_email_id,))
+    origin_row = cursor.fetchone()
+
+    conn.close()
+
+    if not proto_row or not origin_row:
+        return None
+
+    # Reconstruct MessageHeaders
+    to_addrs = json.loads(email_row["to_addresses_json"] or "[]")
+    headers = MessageHeaders(
+        message_id=None,
+        from_address=email_row["from_address"],
+        from_domain=email_row["from_domain"],
+        from_display_name=None,
+        reply_to=email_row["reply_to"],
+        return_path=email_row["return_path"],
+        to_addresses=to_addrs,
+        subject=email_row["subject"] or "",
+        date_header=None,
+        timestamp_utc=email_row["received_timestamp_utc"],
+        all_headers={
+            "From": email_row["from_address"],
+            "Subject": email_row["subject"] or "",
+            "To": ", ".join(to_addrs) if to_addrs else ""
+        }
+    )
+
+    # Reconstruct ProtocolForensicsResult
+    spf = SpfContract(
+        verdict=proto_row["spf_verdict"],
+        domain=proto_row["spf_domain"] or email_row["from_domain"],
+        client_ip=proto_row["origin_ip"],
+        sender=email_row["from_address"],
+        raw_record=None,
+        details=proto_row["spf_details"] or "",
+        score_penalty=0
+    )
+    dkim = DkimContract(
+        verdict=proto_row["dkim_verdict"],
+        selector="default",
+        domain=proto_row["dkim_domain"],
+        identity=None,
+        algorithm=None,
+        canonicalization=None,
+        headers_signed=[],
+        public_key_dns=None,
+        details=proto_row["dkim_details"] or "",
+        score_penalty=0
+    )
+    dmarc = DmarcContract(
+        verdict=proto_row["dmarc_verdict"],
+        policy=proto_row["dmarc_policy"],
+        subdomain_policy=None,
+        percentage=100,
+        domain=email_row["from_domain"],
+        alignment=DmarcAlignmentContract(
+            spf_aligned=bool(proto_row["dmarc_spf_aligned"]),
+            dkim_aligned=bool(proto_row["dmarc_dkim_aligned"])
+        ),
+        raw_record=None,
+        details=proto_row["dmarc_details"] or "",
+        score_penalty=0
+    )
+    arc = ArcContract(
+        verdict=proto_row["arc_verdict"] or "none",
+        instance_count=0,
+        details="Retrieved from forensic database archive",
+        score_penalty=0
+    )
+    raw_hops = json.loads(proto_row["relay_hops_json"] or "[]")
+    relay_hops = [RelayHopContract(**h) for h in raw_hops]
+
+    protocol_res = ProtocolForensicsResult(
+        email_id=full_email_id,
+        source_filename=email_row["source_filename"],
+        headers=headers,
+        spf=spf,
+        dkim=dkim,
+        dmarc=dmarc,
+        arc=arc,
+        relay_hops=relay_hops,
+        origin_ip=proto_row["origin_ip"],
+        protocol_risk_subtotal=proto_row["protocol_risk_subtotal"],
+        subscore_deductions=json.loads(proto_row["subscore_deductions_json"] or "{}")
+    )
+
+    # Reconstruct OriginIntelligenceResult
+    geo = GeoLocationContract(
+        country_code=origin_row["country_code"],
+        country_name=origin_row["country_name"],
+        city=origin_row["city"],
+        latitude=origin_row["latitude"],
+        longitude=origin_row["longitude"],
+        postal_code=None,
+        accuracy_radius_km=None,
+        source_database="GeoLite2-City-Offline"
+    )
+    asn = AsnContract(
+        asn=origin_row["asn"],
+        as_name=None,
+        as_org=origin_row["as_org"],
+        network_prefix=None,
+        source="GeoLite2-ASN-Offline"
+    )
+    timing_anomalies = json.loads(origin_row["timing_anomalies_json"] or "[]")
+    hop_timing = HopTimingContract(
+        total_transit_seconds=origin_row["total_transit_seconds"] or 0,
+        hop_count=len(relay_hops),
+        average_hop_delay_seconds=float(origin_row["total_transit_seconds"] or 0) / max(1, len(relay_hops)),
+        max_delay_hop_number=None,
+        max_delay_seconds=0,
+        timing_anomalies=timing_anomalies
+    )
+    domain_intel = DomainIntelContract(
+        domain=origin_row["target_domain"],
+        normalized_domain=origin_row["target_domain"].lower(),
+        is_punycode=False,
+        decoded_punycode=None,
+        homoglyph_detected=bool(origin_row["homoglyph_detected"]),
+        typosquat_suspect=bool(origin_row["typosquat_suspect"]),
+        created_date_utc=None,
+        domain_age_days=None,
+        is_recently_registered=False
+    )
+    threat_assessment = OriginThreatContract(
+        is_tor_exit_node=bool(origin_row["is_tor_exit"]),
+        is_known_proxy_vpn=False,
+        ioc_watchlist_hit=False,
+        matched_ioc_id=None,
+        threat_reputation_score=origin_row["threat_reputation_score"] or 0
+    )
+    cache_status = CacheStatusContract(
+        from_cache=bool(origin_row["from_cache"]),
+        cache_key=f"{origin_row['target_ip'] or ''}:{origin_row['target_domain']}",
+        cached_at_utc=origin_row["created_at_utc"]
+    )
+    origin_res = OriginIntelligenceResult(
+        target_ip=origin_row["target_ip"],
+        target_domain=origin_row["target_domain"],
+        geolocation=geo,
+        asn=asn,
+        hop_timing=hop_timing,
+        domain_intel=domain_intel,
+        threat_assessment=threat_assessment,
+        cache_status=cache_status,
+        origin_risk_subtotal=origin_row["origin_risk_subtotal"]
+    )
+
+    return (protocol_res, origin_res)
+

@@ -87,3 +87,32 @@ class TestFastApiEndpoints:
         files = {"file": ("empty.eml", b"", "message/rfc822")}
         response = client.post("/api/v1/analyze", files=files)
         assert response.status_code == 400
+
+    def test_pdf_report_export_endpoint(self):
+        """GET /api/v1/reports/{email_id}/pdf generates and streams PDF dossier."""
+        sample_path = settings.SAMPLES_DIR / "spoof_paypal.eml"
+        with open(sample_path, "rb") as f:
+            files = {"file": ("spoof_paypal.eml", f, "message/rfc822")}
+            analyze_resp = client.post("/api/v1/analyze", files=files)
+        assert analyze_resp.status_code == 200
+        email_id = analyze_resp.json()["email_id"]
+
+        pdf_resp = client.get(f"/api/v1/reports/{email_id}/pdf")
+        assert pdf_resp.status_code == 200
+        assert pdf_resp.headers["content-type"] == "application/pdf"
+        assert len(pdf_resp.content) > 1000
+
+    def test_static_test_data_mounted(self):
+        """Verify static /test-data route serves .eml samples."""
+        resp = client.get("/test-data/spoof_paypal.eml")
+        assert resp.status_code == 200
+        assert "PayPal" in resp.text or "Return-Path" in resp.text
+
+    def test_tactical_scenarios_endpoint(self):
+        """GET /scenarios returns pre-configured threat scenarios."""
+        resp = client.get("/scenarios")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["count"] >= 4
+        assert any(s["id"] == "alpha" for s in data["scenarios"])
+

@@ -1,15 +1,16 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import settings
-from backend.db.database import init_db, store_email_analysis, list_cases
-from backend.ingestion.parser import parse_eml_bytes
+from backend.db.database import init_db, store_email_analysis, list_cases, get_email_analysis
+from backend.ingestion.parser import parse_eml_bytes, parse_eml_file
 from backend.forensics.protocols import evaluate_email_protocols
 from backend.intelligence.geoip import analyze_origin_intelligence
 from backend.scoring.fusion import evaluate_risk_fusion
+from backend.reports.generator import generate_court_report
 from cases.integrity import IntegrityLedger
 from backend.cases.manager import create_case
 from backend.api.tactical import (
@@ -23,6 +24,9 @@ from contextlib import asynccontextmanager
 from backend.contracts.case_management import CaseCreateInput, CaseDetailContract
 from backend.contracts.protocol_forensics import ProtocolForensicsResult
 from backend.contracts.origin_intelligence import OriginIntelligenceResult
+
+# In-memory fast cache for recent forensic analyses
+ANALYSIS_CACHE: Dict[str, Tuple[ProtocolForensicsResult, OriginIntelligenceResult]] = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -100,6 +104,7 @@ async def analyze_email_file(file: UploadFile = File(...)):
 
     # 4. Automatically Store Result in SQLite Database
     store_email_analysis(ingested, protocol_res, origin_res)
+    ANALYSIS_CACHE[protocol_res.email_id] = (protocol_res, origin_res)
 
     # 5. Multi-Signal Risk Fusion Engine (Module 4)
     fusion_res = evaluate_risk_fusion(protocol_res, origin_res)
@@ -184,6 +189,7 @@ def _run_pipeline_and_format_tactical(raw_bytes: bytes, filename: str) -> Dict[s
     )
     # 4. Persistence
     store_email_analysis(ingested, protocol_res, origin_res)
+    ANALYSIS_CACHE[protocol_res.email_id] = (protocol_res, origin_res)
     # 5. Risk Fusion
     fusion_res = evaluate_risk_fusion(protocol_res, origin_res)
     # 6. Audit Chain
@@ -281,5 +287,81 @@ def export_stix_by_index(campaign_idx: int):
         return JSONResponse(content=generate_stix_bundle(TACTICAL_CAMPAIGN_REGISTRY[-1]))
     raise HTTPException(status_code=404, detail="No incident recorded in registry yet.")
 
+@app.get("/api/v1/reports/{email_id}/pdf", tags=["Reports"])
+async def export_pdf_report(email_id: str):
+    """
+    Generate and export a court-admissible forensic PDF dossier backed by cryptographic chain.
+    """
+    # 1. Check if pre-generated report exists on disk
+    candidate_path = settings.REPORTS_DIR / f"forensic_dossier_{email_id[:16]}.pdf"
+    if candidate_path.exists():
+        return FileResponse(
+            str(candidate_path),
+            media_type="application/pdf",
+            filename=f"Forensic_Dossier_{email_id[:16]}.pdf"
+        )
+
+    # 2. Check in-memory fast cache
+    if email_id in ANALYSIS_CACHE:
+        proto_res, origin_res = ANALYSIS_CACHE[email_id]
+        pdf_path = generate_court_report(proto_res, origin_res)
+        return FileResponse(
+            str(pdf_path),
+            media_type="application/pdf",
+            filename=f"Forensic_Dossier_{email_id[:16]}.pdf"
+        )
+
+    # 3. Check SQLite database
+    analysis = get_email_analysis(email_id)
+    if analysis:
+        proto_res, origin_res = analysis
+        pdf_path = generate_court_report(proto_res, origin_res)
+        return FileResponse(
+            str(pdf_path),
+            media_type="application/pdf",
+            filename=f"Forensic_Dossier_{email_id[:16]}.pdf"
+        )
+
+    # 4. Fallback: if 'current_case' or 'latest', check latest from cache
+    if email_id in ("current_case", "latest"):
+        if ANALYSIS_CACHE:
+            latest_id = list(ANALYSIS_CACHE.keys())[-1]
+            proto_res, origin_res = ANALYSIS_CACHE[latest_id]
+            pdf_path = generate_court_report(proto_res, origin_res)
+            return FileResponse(
+                str(pdf_path),
+                media_type="application/pdf",
+                filename=f"Forensic_Dossier_{latest_id[:16]}.pdf"
+            )
+
+    # 5. Fallback: check if matches sample file in test-data/
+    sample_file = settings.SAMPLES_DIR / f"{email_id}.eml"
+    if sample_file.exists():
+        ingested = parse_eml_file(sample_file)
+        proto_res = evaluate_email_protocols(ingested)
+        origin_res = analyze_origin_intelligence(
+            ip=proto_res.origin_ip,
+            domain=ingested.headers.from_domain,
+            hops=proto_res.relay_hops
+        )
+        store_email_analysis(ingested, proto_res, origin_res)
+        ANALYSIS_CACHE[proto_res.email_id] = (proto_res, origin_res)
+        pdf_path = generate_court_report(proto_res, origin_res)
+        return FileResponse(
+            str(pdf_path),
+            media_type="application/pdf",
+            filename=f"Forensic_Dossier_{proto_res.email_id[:16]}.pdf"
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Forensic record for email ID '{email_id}' not found."
+    )
+
+# Mount static test-data for frontend demo scenarios
+if settings.SAMPLES_DIR.exists():
+    app.mount("/test-data", StaticFiles(directory=str(settings.SAMPLES_DIR)), name="test-data")
+
 # Mount frontend static UI
 app.mount("/ui", StaticFiles(directory="static", html=True), name="static")
+
