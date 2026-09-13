@@ -15,6 +15,7 @@ from backend.db.database import init_db, store_email_analysis, list_cases
 from backend.ingestion.parser import parse_eml_bytes
 from backend.forensics.protocols import evaluate_email_protocols
 from backend.intelligence.geoip import analyze_origin_intelligence
+from backend.scoring.fusion import evaluate_risk_fusion
 from cases.integrity import IntegrityLedger
 from backend.cases.manager import create_case
 from contextlib import asynccontextmanager
@@ -99,20 +100,16 @@ async def analyze_email_file(file: UploadFile = File(...)):
     # 4. Automatically Store Result in SQLite Database
     store_email_analysis(ingested, protocol_res, origin_res)
 
-    # 5. Determine Forensic Threat Verdict and Score
-    threat_score = max(protocol_res.protocol_risk_subtotal, origin_res.origin_risk_subtotal)
-    if protocol_res.protocol_risk_subtotal >= 35 or origin_res.origin_risk_subtotal >= 35:
-        verdict = "SPOOFED_OR_MALICIOUS"
-    elif protocol_res.protocol_risk_subtotal >= 15 or origin_res.origin_risk_subtotal >= 15:
-        verdict = "SUSPICIOUS"
-    else:
-        verdict = "LEGITIMATE"
+    # 5. Multi-Signal Risk Fusion Engine (Module 4)
+    fusion_res = evaluate_risk_fusion(protocol_res, origin_res)
+    threat_score = fusion_res.composite_threat_score
+    verdict_tier = fusion_res.verdict_tier
 
     # 6. Append Verdict into Cryptographic Audit Hash Chain (cases/integrity.py)
     ledger = IntegrityLedger(settings.LEDGER_PATH)
     audit_block = ledger.add_verdict(
         record_id=protocol_res.email_id,
-        verdict=verdict,
+        verdict=verdict_tier,
         threat_score=threat_score
     )
 
@@ -121,8 +118,10 @@ async def analyze_email_file(file: UploadFile = File(...)):
         "status": "success",
         "email_id": protocol_res.email_id,
         "source_filename": protocol_res.source_filename,
-        "verdict": verdict,
+        "verdict": verdict_tier,
+        "verdict_tier": verdict_tier,
         "threat_score": threat_score,
+        "risk_assessment": fusion_res.model_dump(),
         "protocol_forensics": protocol_res.model_dump(),
         "origin_intelligence": origin_res.model_dump(),
         "audit_block": audit_block

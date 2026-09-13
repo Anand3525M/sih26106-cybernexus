@@ -44,6 +44,9 @@ class TestFastApiEndpoints:
         assert len(data["email_id"]) == 64
         assert "protocol_forensics" in data
         assert "origin_intelligence" in data
+        assert "risk_assessment" in data
+        assert data["verdict_tier"] == "MALICIOUS / HIGH CONFIDENCE SPOOF"
+        assert data["threat_score"] > 80
         assert "audit_block" in data
         assert data["audit_block"]["record_id"] == data["email_id"]
         assert len(data["audit_block"]["current_hash"]) == 64

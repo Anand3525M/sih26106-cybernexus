@@ -33,6 +33,11 @@ from backend.contracts.case_management import (
     AuditIntegrityContract,
     CaseDetailContract,
 )
+from backend.contracts.risk_scoring import (
+    VerdictTier,
+    RiskSignalContract,
+    RiskFusionResult,
+)
 
 __all__ = [
     "RawEmlInput",
@@ -58,4 +63,7 @@ __all__ = [
     "AuditBlockContract",
     "AuditIntegrityContract",
     "CaseDetailContract",
+    "VerdictTier",
+    "RiskSignalContract",
+    "RiskFusionResult",
 ]
