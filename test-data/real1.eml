@@ -1,0 +1,326 @@
+Original Message
+Message ID	<202603091434.88o8fl4y9laq2fj@mail.w3schools.com>
+Created at:	Thu, Sep 3, 2026 at 8:04 PM (Delivered after 60190 seconds)
+From:	"w3schools.com" <info@w3schools.com> Using Sendinblue
+To:	anishawork637@gmail.com
+Subject:	Learning to code is now an adventure
+SPF:	PASS with IP 172.246.33.190 Learn more
+DKIM:	'PASS' with domain w3schools.com Learn more
+DMARC:	'PASS' Learn more
+
+
+Download Original	Copy to clipboard	
+Delivered-To: anishawork637@gmail.com
+Received: by 2002:a05:6359:112:10b0:2b3:34e6:fed3 with SMTP id ic18-n1csp5393662rwb; Fri, 4 Sep 2026 00:18:02 -0700 (PDT)
+X-Received: by 2002:a05:600c:698c:b0:49c:fc6e:a3df with SMTP id 5b1f17b1804b1-49cfc6ea7camr15060395e9.30.1788506281890; Fri, 04 Sep 2026 00:18:01 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1788506281; cv=none; d=google.com; s=arc-20260327; b=L5eSfrWf/nlwN6ENOtztwqyfFs39HyADyifhx4T+QJapgiF5+4DHp2gjX7fWQH3uZ9 ma01KaVXWzu0PYuvDx2RNVM+E6E37UOtOxcG4qwgxBWkzeMCvlsqO4Xe0LOHakhmLq2i F86PiTwBiPwkNLn1kKE57Yd/gctVCnm74OClhdQ4+/bPoODFEo2/qUaw7Hauu4Xzf6vK dLj/CZnVc2AaPKIsm4WimsNnLLDr1V71rnai1/k/8vTz8nkgUuj4CO+06YXzR77PLuAu r4ZB+zeWdPiPJK++HZFm3JWRjKf8fXEY9Ftvl7nFCJVDzPDoO65pJpkkdqgW9e7y5i6s +RZg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327; h=reply-to:message-id:mime-version:list-unsubscribe-post :list-unsubscribe:list-id:from:feedback-id:date:subject:to :dkim-signature:dkim-signature; bh=zKr2QhqySATgIcg87jD9L7WXf/1tT4riTlU5FzucZRw=; fh=QWHaU8lZVMrNsj5ClwXPOWzCw6BQW+vq7sHyhiT48RA=; b=AnZP0+ZWF0C+3xaauQ3yDSDtcnp4LOflSOEiDf3vr2w9oEyZeFUTtFzOzYiE3tX+TM L0NmhlLtOEtrpk+zL6b4sNzAa69I3qtsjQtcVs6EpSVct1qunGjq/8s7oHGGLeFZczyi BIOZ14zxsLKiFLsVNV4+LQmNcThdqe4WlZuYEgLQPlLkAhmDb84RwzLB9/TJjztObH3h j3aDaClYjX96NQl3Gd9wrEmfvTURQ3shnPEoNVJXj1WUF9+EBmd92hz4y54AklMTQjDg 7whYXRJQaSevRwxanW7GfXMOQcWhlJsCe/Z6jPNYB5lFN8FfsdLp7KwTOXZ4TI3unLy9 zFnA==; dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com; dkim=pass header.i=@w3schools.com header.s=mail header.b=ngokxIbz; dkim=pass header.i=@sendib.com header.s=mail header.b=E1Subq+8; spf=pass (google.com: domain of noreply@mail.w3schools.com designates 172.246.33.190 as permitted sender) smtp.mailfrom=noreply@mail.w3schools.com; dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=w3schools.com
+Return-Path: <noreply@mail.w3schools.com>
+Received: from mail.w3schools.com (mail.w3schools.com. [172.246.33.190]) by mx.google.com with ESMTPS id 5b1f17b1804b1-49cf76ed656si32279525e9.18.2026.09.04.00.18.01 for <anishawork637@gmail.com> (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256); Fri, 04 Sep 2026 00:18:01 -0700 (PDT)
+Received-SPF: pass (google.com: domain of noreply@mail.w3schools.com designates 172.246.33.190 as permitted sender) client-ip=172.246.33.190;
+Authentication-Results: mx.google.com; dkim=pass header.i=@w3schools.com header.s=mail header.b=ngokxIbz; dkim=pass header.i=@sendib.com header.s=mail header.b=E1Subq+8; spf=pass (google.com: domain of noreply@mail.w3schools.com designates 172.246.33.190 as permitted sender) smtp.mailfrom=noreply@mail.w3schools.com; dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=w3schools.com
+DKIM-Signature: a=rsa-sha256; bh=zKr2QhqySATgIcg87jD9L7WXf/1tT4riTlU5FzucZRw=; c=relaxed/relaxed; d=w3schools.com; h=to:cc:from:reply-to:subject:date:mime-version:content-type:list-id:list-unsubscribe:x-csa-complaints:list-unsubscribe-post:message-id:sender:x-sib-id:x-mailin-client:x-mailin-campaign:feedback-id:bimi-selector; q=dns/txt; s=mail; t=1788446091; v=1; b=ngokxIbz9/GyPQglhvdemC5qvhaQZ99t6k6eUC2SWfH4W1Gleredq9ltkwObSxCT351VdiH6 OnVuyWQj3KwZqi6p20jDzWCNEWZxe+Pp0j2mdRVQyVWSzCOzXxAg53XOUu9oDl+oHWNPu/HOtn4 OvrfnhROmxwVIj2I1qPxcFk8=
+DKIM-Signature: a=rsa-sha256; bh=zKr2QhqySATgIcg87jD9L7WXf/1tT4riTlU5FzucZRw=; c=relaxed/relaxed; d=sendib.com; h=to:cc:from:reply-to:subject:date:mime-version:content-type:list-id:list-unsubscribe:x-csa-complaints:list-unsubscribe-post:message-id:sender:x-sib-id:x-mailin-client:x-mailin-campaign:feedback-id:bimi-selector; q=dns/txt; s=mail; t=1788446091; v=1; b=E1Subq+8+7xTFgW3Kh4Ic+wFlEUEWXP7Fs2FKksC5S28EVqJUciLfhzaRwFOHNluEN6JUPpW JH9EQOXbDx8jpzAMm1orgL/eT2pB6iv8DKtDE7VsZnZC8lBSsGyEB6Ig4Rv8pWcJEXyT6OHM0Px h6Yf3XRWy/HDdUraaUvl66Es=
+To: <anishawork637@gmail.com>
+Subject: Learning to code is now an adventure
+Content-Type: multipart/alternative; boundary="-------?=_97650-6622295218326"
+Date: Thu, 03 Sep 2026 14:34:51 +0000
+Feedback-ID: 172.246.33.190:5083479_1124:5083479:Sendinblue
+From: w3schools.com <info@w3schools.com>
+List-Id: NTA4MzQ3OS0yODgwMTg1LTE1MA== <NTA4MzQ3OS0yODgwMTg1LTE1MA==.list-id.mail.w3schools.com>
+List-Unsubscribe: <mailto:unsubscribe@mail.w3schools.com?subject=unsub-88o8fl4y9laq2fj&body=88o8fl4y9laq2fj>,<https://list-unsubscribe.me/mk/un/li/sh/WCPxRrWByckTigSXugQaUhA3aUoEorqv/thfi494xdaVR>
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+MIME-Version: 1.0
+Message-Id: <202603091434.88o8fl4y9laq2fj@mail.w3schools.com>
+Reply-To: <info@w3schools.com>
+X-Csa-Complaints: csa-complaints@eco.de
+X-Mailer: Sendinblue
+X-Mailin-Campaign: 1124
+X-Mailin-Client: 5083479
+X-sib-id: lBefLG7aNr7EkclrLcmU-uxsc8ik3VmYRhLVk8X6TjsM5Mk9g6F_bo7tVVQkar0cfc-gQFcDKGGg16YlTUFFWD4jbKXOTfhwJlwkFqTSjq-fnFzkI1AZuxLTWo0vJQ2-x_qLDCF7yHA7ff-8OMGxtVOxp95RTSUVoZVE9H03OyDIJGZtbkqkvRZLCCXST5MUR_GNe6vZ_xTkTNcxvXffu0gloJ2sdLhPAsF6CEZUt0tOj-WirVq2kjfa7Q
+
+---------?=_97650-6622295218326
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=UTF-8
+
+Quests, XP and streaks. Free on iOS and Android.
+
+NOW ON iOS AND ANDROID
+
+*********************************
+Say Hello to W3Schools Adventure.
+*********************************
+
+Our new app turns learning to code into bite-sized quests, with XP, streaks=
+ and weekly leagues. Ten minutes a day is all it takes.
+
+( https://www.w3schools.com/adventure/?utm_source=3Dbrevo&utm_medium=3Demai=
+l&utm_campaign=3DMobile%20app%20announce )
+
+Content Library Image ( https://apps.apple.com/app/w3schools/id6770531503?u=
+tm_source=3Dbrevo&utm_medium=3Demail&utm_campaign=3DMobile%20app%20announce=
+ ) Content Library Image ( https://play.google.com/store/apps/details?id=3D=
+com.w3schools.app.prod&utm_source=3Dbrevo&utm_medium=3Demail&utm_campaign=
+=3DMobile%20app%20announce )
+
+Free on iOS and Android. Your first quest takes about two minutes.
+
+You are getting this email because you have a W3Schools account or subscrib=
+e to our updates.
+W3Schools, COMPANY_ADDRESS
+
+Unsubscribe ( http://r.mail.w3schools.com/mk/un/v2/sh/WCPxRrWByckTigSXugQaU=
+hA3aUoEorqv/bOVYF4AKkb_u ) =C2=B7 View in browser ( http://r.mail.w3schools=
+.com/mk/mr/sh/WCPxRrNLV1LtvzrIjscF4mfgYtWKSpsr/-HLW53mLDVWp )
+
+
+---------?=_97650-6622295218326
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=UTF-8
+
+<!DOCTYPE html><html lang=3D"en" xmlns=3D"http://www.w3.org/1999/xhtml"><he=
+ad><meta charset=3D"utf-8"><meta name=3D"viewport" content=3D"width=3Ddevic=
+e-width, initial-scale=3D1.0"><meta http-equiv=3D"X-UA-Compatible" content=
+=3D"IE=3Dedge"><title>W3Schools Adventure is here</title><style>
+  body{margin:0;padding:0;background:#F5F5F7}
+  table{border-collapse:collapse}
+  img{border:0;line-height:100%;outline:none;text-decoration:none;display:b=
+lock}
+  @media only screen and (max-width:620px){
+    .container{width:100% !important}
+    .px{padding-left:24px !important;padding-right:24px !important}
+    .hero-img{width:100% !important}
+    .stack{display:block !important;width:100% !important}
+    .stack-pad{padding:0 0 12px 0 !important}
+  }
+</style><style></style></head><body aria-disabled=3D"false" data-gr-agent-p=
+resence-bridge-connection-id=3D"1788436968909-0.04376905823166288" data-gr-=
+ext-installed=3D"" data-new-gr-c-s-check-loaded=3D"14.1326.0" data-new-gr-c=
+-s-loaded=3D"14.1326.0" spellcheck=3D"false" style=3D"margin: 0px; padding:=
+ 0px; background-color: rgb(245, 245, 247);"> <table cellpadding=3D"0" bord=
+er=3D"0" cellspacing=3D"0" style=3D"mso-hide:all; display:none;">
+<tr><td>Our new app turns lessons into quests. Free on iOS and Android.&zwn=
+j; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zw=
+nj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&z=
+wnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&=
+zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;=
+&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy=
+;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &sh=
+y;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &s=
+hy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &=
+shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; =
+&shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp;=
+ &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp=
+; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbs=
+p; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nb=
+sp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &n=
+bsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &=
+nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; =
+&nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj;=
+ &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj=
+; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwn=
+j; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zw=
+nj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&z=
+wnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&=
+zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;=
+&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy=
+;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &sh=
+y;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &s=
+hy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &=
+shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; =
+&shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp;=
+ &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp=
+; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbs=
+p; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nb=
+sp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &n=
+bsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &=
+nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; =
+&nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj;=
+ &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj=
+; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwn=
+j; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zw=
+nj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&z=
+wnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&=
+zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;=
+&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy=
+;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &sh=
+y;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &s=
+hy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &=
+shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; =
+&shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp;=
+ &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp=
+; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbs=
+p; &shy;&zwnj; &nbsp; &shy;&zwnj; &nbsp; &shy;</td></tr></table> <!--[if ms=
+o]> <img width=3D"1" height=3D"1" src=3D"https://r.mail.w3schools.com/mk/op=
+/sh/WCPxRrf2SE93VN3n5UEvubeQc669Atoz/FRfU1nDAyBkc" /> <![endif]-->
+=09<!--[if !mso]> <!----> <img style=3D"display:none" src=3D"https://r.mail=
+.w3schools.com/mk/op/sh/WCPxRrf2SE93VN3n5UEvubeQc669Atoz/FRfU1nDAyBkc" /> <=
+!-- <![endif]-->=20
+
+<span style=3D"display:none;font-size:1px;color:#F5F5F7;max-height:0;overfl=
+ow:hidden;">Quests, XP and streaks. Free on iOS and Android.</span>
+
+<table role=3D"presentation" width=3D"100%" cellpadding=3D"0" cellspacing=
+=3D"0" style=3D"background-color: rgb(245, 245, 247); border-collapse: coll=
+apse; border-width: medium; border-style: none; border-color: currentcolor;=
+ border-image: none; empty-cells: show; max-width: 100%; font-size: 16px; f=
+ont-family: Arial;" fr-original-style=3D"background-color:#F5F5F7;"><tbody>=
+<tr><td align=3D"center" style=3D"padding: 28px 12px 40px; min-width: 5px; =
+user-select: text; border: 1px solid transparent; background: unset;" fr-or=
+iginal-style=3D"padding:28px 12px 40px;">
+
+  <table role=3D"presentation" width=3D"600" cellpadding=3D"0" cellspacing=
+=3D"0" style=3D"width: 600px; max-width: 600px; background-color: rgb(255, =
+255, 255); border-radius: 16px; overflow: hidden; border-collapse: collapse=
+; border-width: medium; border-style: none; border-color: currentcolor; bor=
+der-image: none; empty-cells: show; font-size: 16px; font-family: Arial;" f=
+r-original-style=3D"width:600px;max-width:600px;background-color:#ffffff;bo=
+rder-radius:16px;overflow:hidden;" fr-original-class=3D"container"><!-- hea=
+der -->
+    <tbody><tr><td align=3D"center" style=3D"padding: 28px 40px 6px; min-wi=
+dth: 5px; user-select: text; border: 1px solid transparent; background: uns=
+et;" fr-original-style=3D"padding:28px 40px 6px;">
+      <img src=3D"https://img.mail.w3schools.com/im/sh/g0E7e_J5Oyim.png?u=
+=3D92pJLo34vnrQtTPkkqOeQZFZpFApZLZOTi9" width=3D"64" style=3D"margin: 0px a=
+uto; border: 0px; line-height: 100%; outline: none; text-decoration: none; =
+display: block; cursor: pointer; padding: 0px 1px; position: relative; max-=
+width: 100%;" alt=3D"Content Library Image" fr-original-style=3D"margin: 0p=
+x auto;" fr-original-class=3D"fr-draggable" sib_img_id=3D"0">
+    </td></tr>
+
+    <!-- pill -->
+    <tr><td align=3D"center" style=3D"padding: 16px 40px 0px; min-width: 5p=
+x; user-select: text; border: 1px solid transparent; background: unset;" fr=
+-original-style=3D"padding:16px 40px 0;">
+      <table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" fr-o=
+riginal-style=3D"" style=3D"border-collapse: collapse; border-width: medium=
+; border-style: none; border-color: currentcolor; border-image: none; empty=
+-cells: show; max-width: 100%; font-size: 16px; font-family: Arial;"><tbody=
+><tr><td style=3D"background-color: rgb(232, 246, 239); border-radius: 100p=
+x; padding: 7px 16px; font-family: 'Segoe UI', Helvetica, Arial, sans-serif=
+; font-size: 12px; font-weight: 700; letter-spacing: 0.4px; color: rgb(4, 1=
+70, 109); min-width: 5px; user-select: text; border: 1px solid transparent;=
+ background-image: unset; background-position: unset; background-size: unse=
+t; background-repeat: unset; background-attachment: unset; background-origi=
+n: unset; background-clip: unset;" fr-original-style=3D"background-color:#E=
+8F6EF;border-radius:100px;padding:7px 16px;font-family:'Segoe UI',Helvetica=
+,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:.4px;color:=
+#04AA6D;">NOW ON iOS AND ANDROID</td></tr></tbody></table>
+    </td></tr>
+
+    <!-- headline -->
+    <tr><td align=3D"center" style=3D"padding: 16px 40px 0px; font-family: =
+'Segoe UI', Helvetica, Arial, sans-serif; min-width: 5px; user-select: text=
+; border: 1px solid transparent; background: unset;" fr-original-style=3D"p=
+adding:16px 40px 0;font-family:'Segoe UI',Helvetica,Arial,sans-serif;" fr-o=
+riginal-class=3D"px">
+      <h1 style=3D"margin:0;font-size:27px;line-height:1.3;color:#16181D;fo=
+nt-weight:700;">Say Hello to W3Schools Adventure.</h1>
+      <p style=3D"margin: 12px auto 0px; font-size: 15px; line-height: 1.65=
+; color: rgb(63, 74, 69); max-width: 420px; font-family: Arial;" fr-origina=
+l-style=3D"margin:12px auto 0;font-size:15px;line-height:1.65;color:#3f4a45=
+;max-width:420px;">Our new app turns learning to code into bite-sized quest=
+s, with XP, streaks and weekly leagues. Ten minutes a day is all it takes.<=
+/p>
+    </td></tr>
+
+    <!-- hero image -->
+    <tr><td align=3D"center" style=3D"padding: 22px 40px 0px; min-width: 5p=
+x; user-select: text; border: 1px solid transparent; background: unset;" fr=
+-original-style=3D"padding:22px 40px 0;" fr-original-class=3D"px">
+      <a href=3D"http://r.mail.w3schools.com/mk/cl/f/sh/WCPzyXJTZ6uvfElHPBF=
+KxQG15zLXknyf/dElMFDNljoBj" target=3D"_blank" fr-original-style=3D"" style=
+=3D"user-select: auto;" sib_link_id=3D"0" templating=3D"n">
+        <img src=3D"https://img.mail.w3schools.com/im/sh/coVWKuBALLSH.png?u=
+=3D92pJLo34vnrQuEA8y7ymxRICIBvgIgGuhOv" width=3D"520" style=3D"width: 100%;=
+ max-width: 520px; border-radius: 16px; margin: 0px auto; border: 0px; line=
+-height: 100%; outline: none; text-decoration: none; display: block; cursor=
+: pointer; padding: 0px 1px; position: relative;" alt=3D"Content Library Im=
+age" fr-original-style=3D"width: 100%; max-width: 520px; border-radius: 16p=
+x; margin: 0px auto;" fr-original-class=3D"hero-img fr-draggable" sib_img_i=
+d=3D"6">
+      </a>
+    </td></tr>
+
+    <!-- store badges -->
+    <tr><td align=3D"center" style=3D"padding: 26px 40px 8px; min-width: 5p=
+x; user-select: text; border: 1px solid transparent; background: unset;" fr=
+-original-style=3D"padding:26px 40px 8px;">
+      <table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" fr-o=
+riginal-style=3D"" style=3D"border-collapse: collapse; border-width: medium=
+; border-style: none; border-color: currentcolor; border-image: none; empty=
+-cells: show; max-width: 100%; font-size: 16px; font-family: Arial;"><tbody=
+><tr><td align=3D"center" style=3D"padding: 0px 7px; min-width: 5px; user-s=
+elect: text; border: 1px solid transparent; background: unset;" fr-original=
+-style=3D"padding:0 7px;" fr-original-class=3D"stack stack-pad">
+          <a href=3D"http://r.mail.w3schools.com/mk/cl/f/sh/WCPzyXJTZ72ijGy=
+XlGj0jAPoEmEf0Van/58ZkDoCSBev3" target=3D"_blank" fr-original-style=3D"" st=
+yle=3D"user-select: auto;" sib_link_id=3D"1" templating=3D"n"><img src=3D"h=
+ttps://img.mail.w3schools.com/im/sh/gyayi0bpMS9B.png?u=3D92pJLo34vnrQtqmwrU=
+Bih0Gt3iYFw0v9aYX" width=3D"168" style=3D"margin: 0px auto; border: 0px; li=
+ne-height: 100%; outline: none; text-decoration: none; display: block; curs=
+or: pointer; padding: 0px 1px; position: relative; max-width: 100%;" alt=3D=
+"Content Library Image" fr-original-style=3D"margin: 0px auto;" fr-original=
+-class=3D"fr-draggable" sib_img_id=3D"3"></a>
+        </td>
+        <td align=3D"center" style=3D"padding: 0px 7px; min-width: 5px; use=
+r-select: text; border: 1px solid transparent; background: unset;" fr-origi=
+nal-style=3D"padding:0 7px;" fr-original-class=3D"stack">
+          <a href=3D"http://r.mail.w3schools.com/mk/cl/f/sh/WCPzyXJTZ7AVnJB=
+o7MCgUuZbNZ7mGDCv/khwpYLoCTqpO" target=3D"_blank" fr-original-style=3D"" st=
+yle=3D"user-select: auto;" sib_link_id=3D"2" templating=3D"n"><img src=3D"h=
+ttps://img.mail.w3schools.com/im/sh/ACHSK2x0o824.png?u=3D92pJLo34vnrQuLxD0L=
+F92uxy2Lip5ZOAP13" width=3D"168" style=3D"margin: 0px auto; border: 0px; li=
+ne-height: 100%; outline: none; text-decoration: none; display: block; curs=
+or: pointer; padding: 0px 1px; position: relative; max-width: 100%;" alt=3D=
+"Content Library Image" fr-original-style=3D"margin: 0px auto;" fr-original=
+-class=3D"fr-draggable" sib_img_id=3D"7"></a>
+        </td></tr></tbody></table>
+      <p style=3D"margin: 14px 0px 0px; font-family: 'Segoe UI', Helvetica,=
+ Arial, sans-serif; font-size: 13px; line-height: 1.6; color: rgb(110, 110,=
+ 115);" fr-original-style=3D"margin:14px 0 0;font-family:'Segoe UI',Helveti=
+ca,Arial,sans-serif;font-size:13px;line-height:1.6;color:#6e6e73;">Free on =
+iOS and Android. Your first quest takes about two minutes.</p>
+    </td></tr>
+
+    <!-- spacer -->
+    <tr><td style=3D"padding: 0px 0px 26px; min-width: 5px; user-select: te=
+xt; border: 1px solid transparent; background: unset; height: 20px;" fr-ori=
+ginal-style=3D"padding:0 0 26px;"></td></tr>
+
+    <!-- footer -->
+    <tr><td style=3D"background-color: rgb(245, 245, 247); padding: 24px 40=
+px 28px; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; min-width: =
+5px; user-select: text; border: 1px solid transparent; background-image: un=
+set; background-position: unset; background-size: unset; background-repeat:=
+ unset; background-attachment: unset; background-origin: unset; background-=
+clip: unset;" align=3D"center" fr-original-style=3D"background-color:#F5F5F=
+7;padding:24px 40px 28px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;=
+">
+      <p style=3D"margin: 0px; font-size: 12px; line-height: 1.7; color: rg=
+b(154, 154, 162); font-family: Arial;" fr-original-style=3D"margin:0;font-s=
+ize:12px;line-height:1.7;color:#9a9aa2;">
+        You are getting this email because you have a W3Schools account or =
+subscribe to our updates.<br>
+        W3Schools, COMPANY_ADDRESS
+      </p>
+      <p style=3D"margin: 10px 0px 0px; font-size: 12px; color: rgb(154, 15=
+4, 162); font-family: Arial;" fr-original-style=3D"margin:10px 0 0;font-siz=
+e:12px;color:#9a9aa2;">
+        <a href=3D"http://r.mail.w3schools.com/mk/un/v2/sh/WCPxRrWByckTigSX=
+ugQaUhA3aUoEorqv/bOVYF4AKkb_u" style=3D"color: rgb(110, 110, 115); text-dec=
+oration: underline; user-select: auto;" fr-original-style=3D"color:#6e6e73;=
+text-decoration:underline;">Unsubscribe</a>
+        &nbsp;=C2=B7&nbsp;
+        <a href=3D"http://r.mail.w3schools.com/mk/mr/sh/WCPxRrNLV1LtvzrIjsc=
+F4mfgYtWKSpsr/-HLW53mLDVWp" style=3D"color: rgb(110, 110, 115); text-decora=
+tion: underline; user-select: auto;" fr-original-style=3D"color:#6e6e73;tex=
+t-decoration:underline;">View in browser</a>
+      </p>
+    </td></tr></tbody></table>
+</td></tr></tbody></table>
+
+   </body></html>
+
+---------?=_97650-6622295218326--

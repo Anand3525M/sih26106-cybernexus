@@ -1,0 +1,5 @@
+From: payroll-update@secure-portal-corp.com
+Subject: Urgent: Mandatory Direct Deposit Verification Required
+Date: 2026-09-10T08:15:00Z
+Sender-IP: 198.51.100.42
+Body: Attention employee, your scheduled bi-weekly direct deposit requires immediate identity re-verification. Failure to confirm your profile within 24 hours will delay salary distribution. Please click the corporate portal link below to log in and confirm your direct deposit details: http://login.secure-portal-corp.com/auth/login?session=payroll

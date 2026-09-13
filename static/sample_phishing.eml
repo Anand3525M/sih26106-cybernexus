@@ -1,0 +1,98 @@
+Return-Path: <security@paypal-update-verification.com>
+Delivered-To: victim@example.com
+Received: from mx4.example.com (mx4.example.com [192.168.1.10])
+	by mail.example.com (Postfix) with ESMTP id ABC123
+	for <victim@example.com>; Mon, 15 Jul 2024 09:23:45 -0400 (EDT)
+Received: from paypal-update-verification.com (unknown [185.220.101.5])
+	by mx4.example.com (Postfix) with ESMTPS id 789DEF
+	for <victim@example.com>; Mon, 15 Jul 2024 09:23:42 -0400 (EDT)
+Authentication-Results: mx4.example.com;
+	spf=fail (domain of paypal-update-verification.com does not designate 185.220.101.5 as permitted sender)
+	smtp.mailfrom=security@paypal-update-verification.com;
+	dkim=none (no signature);
+	dmarc=none (p=NONE sp=NONE dis=NONE)
+X-Originating-IP: [185.220.101.5]
+X-Sender-IP: 185.220.101.5
+From: "PayPal Security" <security@paypal-update-verification.com>
+Reply-To: support@paypal-help-center.info
+To: "Valued Customer" <victim@example.com>
+Subject: URGENT: Your PayPal Account Has Been Limited - Immediate Action Required!
+Date: Mon, 15 Jul 2024 09:23:40 -0400
+Message-ID: <phish-789456-20240715@paypal-update-verification.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+	boundary="----=_Part_789_1234567890.20240715092340"
+X-Mailer: PHP/7.2.34
+X-Priority: 1 (Highest)
+Importance: High
+X-MSMail-Priority: High
+Sensitivity: Personal
+
+------=_Part_789_1234567890.20240715092340
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
+
+Dear Valued Customer,
+
+URGENT: Your PayPal account has been limited due to suspicious activity detected on our system.
+
+We recently noticed unusual login attempts from an unrecognized device. To protect your account and prevent unauthorized access, we have temporarily restricted certain features including sending and receiving payments.
+
+IMMEDIATE ACTION REQUIRED:
+Please click the link below within 24 hours to verify your identity and restore full account access:
+
+http://paypal-update-verification.com/login.php?email=victim@example.com&token=aHR0cDovL3BoaXNoLmNvbQ==
+
+WARNING: Failure to verify your account within the next 24 hours will result in permanent account suspension and loss of all funds.
+
+If you did not initiate this request, please contact PayPal Support immediately at the phone number provided on the login page.
+
+Thank you for your prompt attention to this security alert.
+
+Sincerely,
+The PayPal Security Team
+Copyright  2024 PayPal Inc. All rights reserved.
+
+------=_Part_789_1234567890.20240715092340
+Content-Type: text/html; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+<head>
+<title>PayPal - Account Security Alert</title>
+</head>
+<body style=3D"font-family: Arial, sans-serif; line-height: 1.6;">
+<div style=3D"max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0;">
+    <div style=3D"background: #003087; padding: 20px; text-align: center;">
+        <h1 style=3D"color: #ffffff; margin: 0; font-size: 24px;">PayPal</h1>
+        <p style=3D"color: #ffffff; margin: 5px 0 0 0;">Account Security Center</p>
+    </div>
+    <div style=3D"padding: 30px 20px;">
+        <h2 style=3D"color: #c72c2c; margin-top: 0;">=E2=9A=A0=EF=B8=8F URGENT SECURITY ALERT: Your Account Has Been Limited</h2>
+        <p>Dear Valued Customer,</p>
+        <p>Your PayPal account has been flagged for <strong>suspicious login activity</strong>. We detected multiple failed login attempts from an unknown location.</p>
+        <p style=3D"background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px;">
+            <strong>=F0=9F=94=B4 WARNING:</strong> Failure to complete verification within <strong>24 HOURS</strong> will result in permanent account suspension and loss of all balances.
+        </p>
+        <div style=3D"text-align: center; margin: 30px 0;">
+            <a href=3D"http://paypal-update-verification.com/login.php?email=3Dvictim@example.com&token=3DdGhpc2lzYXBoaXNo" 
+               style=3D"background: #0070ba; color: white; padding: 15px 40px; text-decoration: none; font-weight: bold; font-size: 16px; border-radius: 5px; display: inline-block;">
+               =F0=9F=94=92 Verify My Account Now
+            </a>
+        </div>
+        <p>If the button above doesn't work, copy and paste this link into your browser:</p>
+        <p style=3D"word-break: break-all; background: #f5f5f5; padding: 10px; font-size: 12px; color: #666;">
+            http://paypal-update-verification.com/login.php?email=3Dvictim@example.com&token=3DdGhpc2lzYXBoaXNo
+        </p>
+        <p>Thank you for your cooperation in keeping your account secure.</p>
+        <p>Sincerely,<br><strong>The PayPal Security Team</strong></p>
+    </div>
+    <div style=3D"background: #f5f5f5; padding: 15px; text-align: center; font-size: 11px; color: #999;">
+        <p>=A9 2024 PayPal Holdings, Inc. All rights reserved.</p>
+        <p>PayPal and the PayPal logo are trademarks of PayPal Holdings, Inc.</p>
+    </div>
+</div>
+</body>
+</html>
+
+------=_Part_789_1234567890.20240715092340--

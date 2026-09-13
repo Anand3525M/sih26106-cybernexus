@@ -1,0 +1,5 @@
+From: security@secure-portal-corp.com
+Subject: Security Alert: Confirm Your Corporate Login Credentials
+Date: 2026-09-10T14:20:00Z
+Sender-IP: 198.51.100.99
+Body: Our security gateway detected suspicious sign-in activity on your corporate account. Please confirm your credentials immediately to avoid account suspension: http://login.secure-portal-corp.com/auth/login?ref=security

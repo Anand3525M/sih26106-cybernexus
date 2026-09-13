@@ -1,0 +1,5 @@
+From: compliance@secure-portal-corp.com
+Subject: Final Notice: Direct Deposit and Identity Verification
+Date: 2026-09-10T16:45:00Z
+Sender-IP: 198.51.100.42
+Body: Final notice regarding your direct deposit authorization. Urgent action is mandatory today to prevent paycheck delay. Confirm your credentials now via our secure portal: http://login.secure-portal-corp.com/auth/login?session=payroll

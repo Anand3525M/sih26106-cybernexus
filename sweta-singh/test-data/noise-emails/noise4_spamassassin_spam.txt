@@ -1,0 +1,5 @@
+From: rewards-notification@discount-travel-deals.biz
+Subject: Congratulations! Claim Your Complimentary 3-Day Resort Getaway
+Date: 2026-09-10T15:10:00Z
+Sender-IP: 203.0.113.88
+Body: You have been selected to receive a promotional complimentary resort voucher valid for 3 days and 2 nights in Cancun or Las Vegas. Claim your promotional voucher code before midnight at: http://rewards-promotions-resort.biz/claim?user=member

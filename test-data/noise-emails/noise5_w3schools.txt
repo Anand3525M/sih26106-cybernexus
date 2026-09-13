@@ -1,0 +1,5 @@
+From: info@w3schools.com
+Subject: Learning to code is now an adventure
+Date: 2026-09-10T14:34:51Z
+Sender-IP: 172.246.33.190
+Body: Our new app turns learning to code into bite-sized quests, with XP, streaks and weekly leagues. Free on iOS and Android. Your first quest takes about two minutes. Access the portal at: https://www.w3schools.com/adventure/
