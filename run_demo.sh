@@ -27,4 +27,4 @@ echo "  [✓] Interactive OpenAPI Specs: http://127.0.0.1:8000/docs"
 echo "  [✓] Cryptographic Audit Chain: http://127.0.0.1:8000/api/v1/integrity/verify"
 echo "=========================================================="
 
-./venv/bin/uvicorn backend.api.app:app --host 0.0.0.0 --port 8000 --reload
+./venv/bin/uvicorn backend.api.app:app --host 0.0.0.0 --port 8000 --reload --reload-dir backend --reload-dir cases --reload-dir static

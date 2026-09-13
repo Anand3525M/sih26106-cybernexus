@@ -428,3 +428,18 @@ if settings.SAMPLES_DIR.exists():
 # Mount frontend static UI
 app.mount("/ui", StaticFiles(directory="static", html=True), name="static")
 
+
+
+import json
+from pathlib import Path
+from fastapi.responses import JSONResponse
+
+@app.get("/api/v1/campaign/graph", tags=["Threat Intelligence"])
+async def get_campaign_graph_v1():
+    """Returns the correlated threat topology graph."""
+    graph_file = Path("sweta-singh/campaign_graph.json")
+    if graph_file.exists():
+        data = json.loads(graph_file.read_text(encoding="utf-8"))
+        return JSONResponse(content=data)
+    return JSONResponse(content={"nodes": [], "links": []})
+
