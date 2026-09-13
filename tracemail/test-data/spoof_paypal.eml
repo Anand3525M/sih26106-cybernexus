@@ -1,0 +1,24 @@
+From: "PayPal Security Support" <security@paypaI-support.com>
+To: victim@corporation.org
+Subject: [CRITICAL] Your PayPal Account Has Been Restricted
+Date: Fri, 11 Sep 2026 18:24:00 +0000
+Message-ID: <20260911182400.102938@paypaI-support.com>
+Reply-To: harvest-ops@bulletproof-relay.ru
+Authentication-Results: mx.targetorg.in;
+    spf=fail (sender IP 185.220.101.42 is not authorized) smtp.mailfrom=security@paypaI-support.com;
+    dkim=fail (bad signature or missing key) header.d=paypaI-support.com;
+    dmarc=fail (action=reject) header.from=paypaI-support.com
+Received-SPF: fail (mx.targetorg.in: domain of security@paypaI-support.com does not designate 185.220.101.42 as permitted sender)
+Received: from mail.bulletproof-relay.ru (mail.bulletproof-relay.ru [185.220.101.42])
+    by mx.targetorg.in (Postfix) with ESMTP id 4X9L10z
+    for <victim@corporation.org>; Fri, 11 Sep 2026 18:24:05 +0000
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+
+<html>
+<body>
+<p>Dear customer,</p>
+<p>We detected unauthorized login attempts from Amsterdam, Netherlands.</p>
+<p>Please <a href="http://paypaI-support.com/login.php?user=victim">Verify your identity immediately</a> within 24 hours.</p>
+</body>
+</html>

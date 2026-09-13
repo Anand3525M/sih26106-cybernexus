@@ -1,0 +1,17 @@
+From: "Robert Vance (CEO)" <ceo@vancerefrigeration.com>
+To: accounts@targetorg.in
+Subject: Urgent: Wire Transfer Instructions for Acquisition
+Date: Thu, 10 Sep 2026 14:10:00 +0000
+Message-ID: <wire.urgent.99823@vancerefrigeration.com>
+Reply-To: direct-exec-channel@anonymous-drop.com
+Authentication-Results: mx.targetorg.in;
+    spf=fail smtp.mailfrom=ceo@vancerefrigeration.com;
+    dkim=none;
+    dmarc=fail (action=reject) header.from=vancerefrigeration.com
+Received: from unknown-vps.hosting.com (unknown-vps.hosting.com [198.51.100.77])
+    by mx.targetorg.in with ESMTP
+    for <accounts@targetorg.in>; Thu, 10 Sep 2026 14:10:02 +0000
+Content-Type: text/plain; charset=UTF-8
+
+Please process the attached $48,500 consulting settlement invoice immediately via wire transfer today.
+Do not discuss this with the team as it is under NDA.

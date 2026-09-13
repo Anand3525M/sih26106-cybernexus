@@ -1,0 +1,25 @@
+# Python virtual environments
+venv/
+.venv/
+tracemail/venv/
+
+# Bytecode & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Databases & Runtime State
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated Forensic Reports
+backend/data/reports/*.pdf
+tracemail/data/reports/*.pdf
+
+# Environment & Editor
+.env
+.DS_Store
+.idea/
+.vscode/

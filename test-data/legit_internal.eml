@@ -1,0 +1,15 @@
+From: "IT Support" <support@targetorg.in>
+To: staff@targetorg.in
+Subject: Scheduled Maintenance: Mail Gateway Upgrade Tonight
+Date: Thu, 10 Sep 2026 11:00:00 +0000
+Message-ID: <targetorg.internal.4481@targetorg.in>
+Authentication-Results: mx.targetorg.in;
+    dkim=pass header.i=@targetorg.in;
+    spf=pass smtp.mailfrom=support@targetorg.in;
+    dmarc=pass header.from=targetorg.in
+Received: from internal-relay.targetorg.in (internal-relay.targetorg.in [10.0.1.5])
+    by mx.targetorg.in with ESMTP
+    for <staff@targetorg.in>; Thu, 10 Sep 2026 11:00:01 +0000
+Content-Type: text/plain; charset=UTF-8
+
+The corporate mail gateway will undergo scheduled maintenance tonight between 02:00 and 03:00 UTC.

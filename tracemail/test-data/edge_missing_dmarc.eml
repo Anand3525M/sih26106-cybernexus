@@ -1,0 +1,15 @@
+From: "Small Supplier Ltd" <orders@small-supplier-edge.co>
+To: procurement@targetorg.in
+Subject: Order confirmation #ORD-99128
+Date: Fri, 11 Sep 2026 16:45:00 +0000
+Message-ID: <order.confirmation.332@small-supplier-edge.co>
+Authentication-Results: mx.targetorg.in;
+    spf=pass smtp.mailfrom=orders@small-supplier-edge.co;
+    dkim=pass header.i=@small-supplier-edge.co;
+    dmarc=none (p=none dis=none) header.from=small-supplier-edge.co
+Received: from mail.small-supplier-edge.co (mail.small-supplier-edge.co [198.51.100.22])
+    by mx.targetorg.in with ESMTP
+    for <procurement@targetorg.in>; Fri, 11 Sep 2026 16:45:02 +0000
+Content-Type: text/plain; charset=UTF-8
+
+Thank you for your purchase order. Shipment is scheduled for Monday.

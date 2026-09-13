@@ -1,0 +1,21 @@
+From: "Chase Online Banking" <alerts@chase-security-verify.net>
+To: user@targetorg.in
+Subject: Warning: Unusual Debit Activity Detected
+Date: Wed, 09 Sep 2026 09:30:00 +0000
+Message-ID: <alert.8871625@chase-security-verify.net>
+Authentication-Results: mx.targetorg.in;
+    spf=softfail smtp.mailfrom=alerts@chase-security-verify.net;
+    dkim=fail;
+    dmarc=fail (action=quarantine) header.from=chase-security-verify.net
+Received: from direct-host.spammer.net (direct-host.spammer.net [203.0.113.195])
+    by mx.targetorg.in with ESMTP
+    for <user@targetorg.in>; Wed, 09 Sep 2026 09:30:04 +0000
+Content-Type: text/html; charset=UTF-8
+
+<html>
+<body>
+<h3>Security Notice</h3>
+<p>An unauthorized card swipe of $1,299.00 was recorded in Moscow.</p>
+<a href="http://203.0.113.195/chase/verify.html">Cancel Transaction</a>
+</body>
+</html>

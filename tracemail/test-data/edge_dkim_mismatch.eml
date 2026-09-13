@@ -1,0 +1,15 @@
+From: "Trusted Retailer" <support@trustedretailer.com>
+To: customer@targetorg.in
+Subject: Your package receipt
+Date: Fri, 11 Sep 2026 17:15:00 +0000
+Message-ID: <receipt.118274@cheap-bulk-mailer.net>
+Authentication-Results: mx.targetorg.in;
+    dkim=pass (signature verified) header.d=cheap-bulk-mailer.net header.s=mailer;
+    spf=fail (198.51.100.89 is not allowed by trustedretailer.com) smtp.mailfrom=bounce@cheap-bulk-mailer.net;
+    dmarc=fail (action=quarantine) header.from=trustedretailer.com
+Received: from out.cheap-bulk-mailer.net (out.cheap-bulk-mailer.net [198.51.100.89])
+    by mx.targetorg.in with ESMTP
+    for <customer@targetorg.in>; Fri, 11 Sep 2026 17:15:03 +0000
+Content-Type: text/plain; charset=UTF-8
+
+Your package was delivered to the front porch.

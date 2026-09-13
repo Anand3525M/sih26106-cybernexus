@@ -1,0 +1,16 @@
+From: Google Community Team <no-reply@accounts.google.com>
+To: admin@targetorg.in
+Subject: Security alert for your linked Google Account
+Date: Fri, 11 Sep 2026 12:00:00 +0000
+Message-ID: <google.sec.8827361@google.com>
+Authentication-Results: mx.targetorg.in;
+    dkim=pass header.i=@accounts.google.com header.s=20230601 header.b=XyZ;
+    spf=pass (mx.targetorg.in: domain of 3j71...google.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=3j71@google.com;
+    dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=accounts.google.com
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com [209.85.220.41])
+    by mx.targetorg.in with SMTPS
+    for <admin@targetorg.in>; Fri, 11 Sep 2026 12:00:03 +0000
+Content-Type: text/plain; charset=UTF-8
+
+A new device signed into your Google Account.
+If this was you, no action is needed. If this wasn't you, review your recent devices at https://myaccount.google.com/device-activity
