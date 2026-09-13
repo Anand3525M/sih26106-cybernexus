@@ -443,3 +443,19 @@ async def get_campaign_graph_v1():
         return JSONResponse(content=data)
     return JSONResponse(content={"nodes": [], "links": []})
 
+@app.post("/api/v1/integrity/tamper", tags=["Cryptographic Audit"])
+async def inject_ledger_tamper():
+    """Simulates database tampering to demonstrate SHA-256 break."""
+    ledger_path = Path("backend/data/audit_ledger.json")
+    if ledger_path.exists():
+        data = json.loads(ledger_path.read_text(encoding="utf-8"))
+        if len(data) >= 1:
+            target_idx = 1 if len(data) > 1 else 0
+            # Corrupt the payload hash of block
+            data[target_idx]["evidence_hash"] = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+            data[target_idx]["record_id"] = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+            ledger_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+            return {"status": "TAMPER_INJECTED", "corrupted_block": target_idx}
+    return {"status": "FAILED", "reason": "Ledger empty or not found"}
+
+
