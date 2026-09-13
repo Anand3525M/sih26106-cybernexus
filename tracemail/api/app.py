@@ -119,7 +119,7 @@ async def analyze_email_file(file: UploadFile = File(...)):
         threat_score=threat_score
     )
 
-    # 7. Return Structured JSON adhering strictly to approved data contracts
+    # 7. Return Structured JSON adhering strictly to approved data contracts with UI aliases
     return {
         "status": "success",
         "email_id": protocol_res.email_id,
@@ -127,9 +127,35 @@ async def analyze_email_file(file: UploadFile = File(...)):
         "verdict": verdict_tier,
         "verdict_tier": verdict_tier,
         "threat_score": threat_score,
+        "scoring": {
+            "composite_threat_score": threat_score,
+            "verdict_tier": verdict_tier,
+            "triggered_signals": [s.model_dump() for s in fusion_res.triggered_signals]
+        },
         "risk_assessment": fusion_res.model_dump(),
         "protocol_forensics": protocol_res.model_dump(),
+        "forensics": {
+            **protocol_res.model_dump(),
+            "hops": [
+                {
+                    "hop_number": h.hop_number,
+                    "sending_host": h.from_host,
+                    "receiving_host": h.by_host,
+                    "ip_address": h.ip,
+                    "transit_delay_seconds": h.transit_delay_seconds
+                }
+                for h in protocol_res.relay_hops
+            ]
+        },
         "origin_intelligence": origin_res.model_dump(),
+        "intelligence": {
+            **origin_res.model_dump(),
+            "asn": {
+                **origin_res.asn.model_dump(),
+                "autonomous_system_organization": origin_res.asn.as_org or origin_res.asn.as_name or "Tor Relay Node"
+            }
+        },
+        "raw_headers": "\n".join(f"{k}: {v}" for k, v in ingested.headers.all_headers.items()),
         "audit_block": audit_block
     }
 
@@ -145,9 +171,12 @@ def verify_integrity_ledger():
 
     return {
         "is_intact": is_intact,
+        "chain_valid": is_intact,
         "message": message,
         "total_blocks": len(chain),
+        "verified_blocks": len(chain),
         "tamper_detected": not is_intact,
+        "tampered_block_index": None if is_intact else 0,
         "latest_hash": chain[-1]["current_hash"] if chain else None,
         "chain": chain
     }

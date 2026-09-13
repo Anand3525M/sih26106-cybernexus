@@ -3,402 +3,382 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PALANTIR // SENTINEL FORENSIC INTELLIGENCE</title>
+  <title>TRACEMAIL // GOD'S EYE VIEW FORENSIC INTELLIGENCE</title>
   
-  <!-- Tailwind CSS & Google Fonts -->
+  <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
   
-  <!-- Vis.js Network for Adversary Graphs -->
-  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-  
-  <!-- Leaflet Dark Map -->
+  <!-- Leaflet Tactical Geospatial Canvas -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    body { font-family: 'Inter', sans-serif; background-color: #05070a; color: #cbd5e1; }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-    .grid-mesh {
-      background-image: linear-gradient(to right, rgba(30, 41, 59, 0.25) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
-      background-size: 20px 20px;
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #020408;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
     }
-    .hud-border { border: 1px solid rgba(51, 65, 85, 0.6); }
-    #leafletMap { height: 100%; width: 100%; background: #05070a; }
-    #entityGraph { height: 100%; width: 100%; background: #070a10; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* God's Eye View Full-Bleed Map Canvas */
+    #godsEyeMap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      background: #020408;
+    }
+
+    /* Satellite Scanline and Vignette Layer */
+    .spatial-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: radial-gradient(circle at center, transparent 30%, rgba(2, 4, 8, 0.85) 95%),
+                  linear-gradient(rgba(18, 24, 38, 0.15) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(18, 24, 38, 0.15) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
+    }
+
+    /* Apple Liquid Glass / Specular Floating Panels */
+    .glass-hud {
+      background: rgba(6, 10, 18, 0.72);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+                  0 16px 36px -8px rgba(0, 0, 0, 0.8),
+                  0 0 1px 1px rgba(0, 0, 0, 0.4);
+      border-radius: 6px;
+    }
+
+    .glass-pill {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    }
+
+    /* Reticle Pulse Effect */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.6); opacity: 0.9; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+    .reticle-ring {
+      position: absolute;
+      border: 1.5px solid #ef4444;
+      border-radius: 50%;
+      animation: pulse-ring 2.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+
+    /* Custom Leaflet Map Inversion for True Dark Satellite Aesthetic */
+    .leaflet-tile {
+      filter: brightness(0.55) invert(1) contrast(1.4) hue-rotate(200deg) saturate(0.3);
+    }
+    .leaflet-control-container { display: none; }
   </style>
 </head>
-<body class="h-screen w-screen flex flex-col overflow-hidden select-none">
+<body class="select-none relative">
 
-  <!-- Top Tactical Command Bar -->
-  <header class="h-12 border-b border-slate-800 bg-[#080b12] px-4 flex items-center justify-between z-30 shrink-0">
-    <div class="flex items-center space-x-3">
-      <div class="relative flex h-2.5 w-2.5">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="mono text-xs font-bold tracking-widest text-slate-100">PALANTIR SENTINEL</span>
-        <span class="mono text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/30">DEFCON 2</span>
-        <span class="mono text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">TOP SECRET // REL TO SOC-INTEL</span>
-      </div>
-      <div class="h-4 w-[1px] bg-slate-800"></div>
-      <span id="utcClock" class="mono text-[10px] text-slate-400">UTC 00:00:00</span>
-    </div>
+  <!-- Spatial Geospatial Background Viewport -->
+  <div id="godsEyeMap"></div>
+  <div class="spatial-overlay"></div>
 
-    <div class="flex items-center space-x-3">
-      <div id="ledgerBadge" class="mono text-[10px] px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5">
-        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-        <span>HASH CHAIN: 100% INTACT</span>
-      </div>
-      <button onclick="triggerPdfExport()" class="mono text-[10px] px-2.5 py-1 rounded bg-red-950/60 hover:bg-red-900 border border-red-500/50 text-red-200 flex items-center gap-1.5 transition">
-        <i data-lucide="file-down" class="w-3.5 h-3.5 text-red-400"></i>
-        <span>EXPORT STIX 2.1 / PDF</span>
-      </button>
-      <div class="mono text-[10px] px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
-        OPERATOR: PARMAR
-      </div>
-    </div>
-  </header>
+  <!-- FLOATING HUD LAYER -->
+  <div class="relative z-10 w-full h-full flex flex-col justify-between p-4 pointer-events-none">
 
-  <!-- Main 3-Column Tactical Workspace -->
-  <div class="flex-1 flex overflow-hidden">
-
-    <!-- Left Column: Ingestion Dock & Scenario Presets -->
-    <aside class="w-64 border-r border-slate-800 bg-[#06080e] p-3 flex flex-col justify-between shrink-0">
-      <div class="space-y-3">
-        
-        <!-- Stream Ingest Buffer -->
-        <div>
-          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80 mb-2">
-            <span class="mono text-[10px] text-slate-400 uppercase font-bold tracking-wider">Target Ingestion Buffer</span>
-            <span class="mono text-[9px] text-emerald-400">READY</span>
+    <!-- 1. Top Orbital Telemetry HUD -->
+    <header class="w-full flex items-center justify-between pointer-events-auto">
+      <div class="glass-hud px-4 py-2.5 flex items-center gap-4">
+        <div class="flex items-center gap-2.5">
+          <div class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
           </div>
-          <div id="dropZone" class="border border-dashed border-slate-700 hover:border-red-500 rounded bg-[#090d16] p-3 text-center cursor-pointer transition">
-            <i data-lucide="upload-cloud" class="w-5 h-5 mx-auto mb-1 text-slate-400"></i>
-            <span class="mono text-[10px] font-bold block text-slate-200">DROP .EML STREAM</span>
-            <span class="mono text-[8px] text-slate-500 block mt-0.5">Air-Gapped RFC Parsing</span>
+          <div>
+            <div class="mono text-xs font-bold tracking-widest text-slate-100 flex items-center gap-2">
+              <span>TRACEMAIL</span>
+              <span class="text-cyan-400 font-normal">// GOD'S EYE VIEW</span>
+            </div>
+            <div class="mono text-[8px] text-slate-400 tracking-wider">GEOSPATIAL HOP INTERCEPT & RELAY MATRIX</div>
+          </div>
+        </div>
+
+        <div class="h-4 w-[1px] bg-slate-700/60"></div>
+
+        <div class="flex items-center gap-2">
+          <span class="mono text-[9px] px-2 py-0.5 rounded glass-pill text-amber-400 border border-amber-500/30">DEFCON 2</span>
+          <span id="utcClock" class="mono text-[11px] text-slate-300">UTC 00:00:00</span>
+          <span class="mono text-[9px] px-2 py-0.5 rounded glass-pill text-cyan-300 border border-cyan-500/30">SATELLITE: AIR-GAP</span>
+        </div>
+      </div>
+
+      <!-- Right Action Indicators -->
+      <div class="glass-hud px-3 py-2 flex items-center gap-3">
+        <div id="ledgerBadge" class="mono text-[10px] px-2.5 py-1 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+          <span>AUDIT CHAIN: INTACT</span>
+        </div>
+        <button onclick="runAuditVerify()" class="mono text-[10px] px-2.5 py-1 rounded glass-pill hover:bg-slate-800 text-slate-200 transition">
+          RE-VERIFY
+        </button>
+        <div class="mono text-[10px] text-slate-400 border-l border-slate-700 pl-3">
+          SECTOR: 0x8F
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. Mid-Stage: Floating Side Panels & Threat Compass -->
+    <div class="flex-1 flex justify-between items-center my-4 overflow-hidden gap-4">
+
+      <!-- Left Ingestion & Target Selection Dock -->
+      <aside class="w-80 glass-hud p-3.5 flex flex-col gap-3 pointer-events-auto max-h-[82vh] overflow-y-auto">
+        <div>
+          <div class="flex items-center justify-between pb-1.5 border-b border-white/10 mb-2">
+            <span class="mono text-[10px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
+              <i data-lucide="crosshair" class="w-3 h-3 text-cyan-400"></i>
+              Target Ingestion
+            </span>
+            <span class="mono text-[8px] text-emerald-400">RFC-5322</span>
+          </div>
+
+          <!-- Dropzone -->
+          <div id="dropZone" class="border border-dashed border-cyan-500/30 hover:border-cyan-400 rounded bg-slate-900/40 p-3 text-center cursor-pointer transition">
+            <i data-lucide="radar" class="w-5 h-5 mx-auto mb-1 text-cyan-400 animate-spin" style="animation-duration: 9s;"></i>
+            <span class="mono text-[10px] font-bold block text-slate-100">FEED TARGET STREAM</span>
+            <span class="mono text-[8px] text-slate-400 block mt-0.5">Drop .EML or raw forensic mime</span>
             <input type="file" id="fileInput" class="hidden" accept=".eml,.txt">
           </div>
         </div>
 
-        <!-- Tactical Scenario Presets -->
-        <div>
-          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80 mb-2">
-            <span class="mono text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tactical Scenarios</span>
-            <span class="mono text-[9px] text-slate-500">4 ARRAYS</span>
-          </div>
-          <div class="space-y-1.5">
-            <button onclick="loadScenario('spoof_paypal')" class="w-full text-left p-2 rounded bg-[#090d16] hover:bg-slate-800 border border-slate-800/80 hover:border-red-500/50 transition">
-              <div class="flex justify-between items-center">
-                <span class="mono text-[10px] font-bold text-red-400">⚠️ Scenario Alpha</span>
-                <span class="mono text-[9px] text-red-400 font-bold">100/100</span>
-              </div>
-              <span class="mono text-[8px] text-slate-400 block mt-0.5 truncate">PayPal Account Takeover</span>
-            </button>
+        <!-- Tactical Scenario Triggers -->
+        <div class="space-y-1.5">
+          <div class="mono text-[9px] text-slate-400 uppercase tracking-wider pb-0.5">Tactical Threat Scenarios</div>
 
-            <button onclick="loadScenario('spoof_ceo_wire')" class="w-full text-left p-2 rounded bg-[#090d16] hover:bg-slate-800 border border-slate-800/80 hover:border-amber-500/50 transition">
-              <div class="flex justify-between items-center">
-                <span class="mono text-[10px] font-bold text-amber-400">🔀 Scenario Bravo</span>
-                <span class="mono text-[9px] text-amber-400 font-bold">85/100</span>
-              </div>
-              <span class="mono text-[8px] text-slate-400 block mt-0.5 truncate">CEO Wire BEC Fraud</span>
-            </button>
-
-            <button onclick="loadScenario('spoof_bank_alert')" class="w-full text-left p-2 rounded bg-[#090d16] hover:bg-slate-800 border border-slate-800/80 hover:border-amber-500/50 transition">
-              <div class="flex justify-between items-center">
-                <span class="mono text-[10px] font-bold text-amber-400">💣 Scenario Charlie</span>
-                <span class="mono text-[9px] text-amber-400 font-bold">78/100</span>
-              </div>
-              <span class="mono text-[8px] text-slate-400 block mt-0.5 truncate">Weaponized Invoice Dropper</span>
-            </button>
-
-            <button onclick="loadScenario('legit_google')" class="w-full text-left p-2 rounded bg-[#090d16] hover:bg-slate-800 border border-slate-800/80 hover:border-emerald-500/50 transition">
-              <div class="flex justify-between items-center">
-                <span class="mono text-[10px] font-bold text-emerald-400">🛡️ Scenario Delta</span>
-                <span class="mono text-[9px] text-emerald-400 font-bold">0/100</span>
-              </div>
-              <span class="mono text-[8px] text-slate-400 block mt-0.5 truncate">Authorized Enterprise Memo</span>
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Ingestion Buffer Telemetry -->
-      <div class="p-2 rounded bg-[#080b12] border border-slate-800 mono text-[9px] space-y-1">
-        <div class="flex justify-between text-slate-400">
-          <span>PARSER ENGINE:</span>
-          <span class="text-emerald-400">STRICT RFC-5322</span>
-        </div>
-        <div class="flex justify-between text-slate-400">
-          <span>SOCKET PRIVILEGE:</span>
-          <span class="text-slate-200">BLOCKED (ISOLATED)</span>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Center Stage: Multi-View Intelligence Deck -->
-    <main class="flex-1 bg-[#04060a] flex flex-col overflow-hidden grid-mesh">
-
-      <!-- View Selector Tabs -->
-      <div class="h-9 border-b border-slate-800 bg-[#070a10] px-3 flex items-center justify-between shrink-0">
-        <div class="flex items-center space-x-1 mono text-[10px]">
-          <button onclick="switchTab('telemetry')" id="tab-telemetry" class="px-2.5 py-1 rounded bg-slate-800 text-slate-100 font-bold border border-slate-700">
-            📡 FORENSIC MATRIX & PROTOCOLS
+          <button onclick="triggerPreload('spoof_paypal')" class="w-full text-left p-2 rounded glass-pill hover:bg-red-950/30 border border-slate-800 hover:border-red-500/50 transition flex items-center justify-between group">
+            <div>
+              <span class="mono text-[10px] font-bold text-red-400 group-hover:text-red-300 block">[!] PayPal ATO Spoof</span>
+              <span class="mono text-[8px] text-slate-400 block">Tor Node (Frankfurt) ➔ Target</span>
+            </div>
+            <span class="mono text-[10px] font-bold text-red-400">100</span>
           </button>
-          <button onclick="switchTab('map')" id="tab-map" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400">
-            🗺️ GEOSPATIAL HOP INTERCEPT
+
+          <button onclick="triggerPreload('spoof_ceo_wire')" class="w-full text-left p-2 rounded glass-pill hover:bg-amber-950/30 border border-slate-800 hover:border-amber-500/50 transition flex items-center justify-between group">
+            <div>
+              <span class="mono text-[10px] font-bold text-amber-400 group-hover:text-amber-300 block">[!] CEO Wire BEC</span>
+              <span class="mono text-[8px] text-slate-400 block">Display Name Spoofing</span>
+            </div>
+            <span class="mono text-[10px] font-bold text-amber-400">85</span>
           </button>
-          <button onclick="switchTab('graph')" id="tab-graph" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400">
-            🕸️ GOTHAM ENTITY GRAPH
-          </button>
-          <button onclick="switchTab('mitre')" id="tab-mitre" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400">
-            🎯 MITRE ATT&CK & PLAYBOOK
+
+          <button onclick="triggerPreload('legit_google')" class="w-full text-left p-2 rounded glass-pill hover:bg-emerald-950/30 border border-slate-800 hover:border-emerald-500/50 transition flex items-center justify-between group">
+            <div>
+              <span class="mono text-[10px] font-bold text-emerald-400 group-hover:text-emerald-300 block">[✓] Enterprise Google Memo</span>
+              <span class="mono text-[8px] text-slate-400 block">Mountain View ➔ Relay</span>
+            </div>
+            <span class="mono text-[10px] font-bold text-emerald-400">00</span>
           </button>
         </div>
-        <span id="activeScanStatus" class="mono text-[9px] text-slate-400">AWAITING SCAN TRIGGER</span>
-      </div>
 
-      <!-- Stage Views Container -->
-      <div class="flex-1 p-3 overflow-hidden relative">
-
-        <!-- VIEW 1: Forensics Telemetry & Matrix -->
-        <div id="view-telemetry" class="h-full flex flex-col gap-3 overflow-y-auto">
-          <!-- Threat Score & Protocols -->
-          <div class="grid grid-cols-4 gap-2.5 shrink-0">
-            <div class="p-2.5 rounded bg-[#070b14] border border-slate-800 flex flex-col justify-between">
-              <span class="mono text-[9px] text-slate-400 uppercase">Composite Threat Score</span>
-              <div class="flex items-baseline gap-1 my-0.5">
-                <span id="scoreVal" class="mono text-3xl font-bold text-red-500">--</span>
-                <span class="mono text-xs text-slate-500">/ 100</span>
-              </div>
-              <span id="verdictText" class="mono text-[8px] font-bold text-slate-400">STANDBY</span>
-            </div>
-
-            <div class="p-2.5 rounded bg-[#070b14] border border-slate-800 flex flex-col justify-between">
-              <span class="mono text-[9px] text-slate-400 uppercase">RFC 7208 SPF</span>
-              <span id="spfVal" class="mono text-base font-bold text-slate-300 my-0.5">--</span>
-              <span id="spfInfo" class="mono text-[8px] text-slate-500 truncate">Domain validation</span>
-            </div>
-
-            <div class="p-2.5 rounded bg-[#070b14] border border-slate-800 flex flex-col justify-between">
-              <span class="mono text-[9px] text-slate-400 uppercase">RFC 6376 DKIM</span>
-              <span id="dkimVal" class="mono text-base font-bold text-slate-300 my-0.5">--</span>
-              <span id="dkimInfo" class="mono text-[8px] text-slate-500 truncate">Signature verification</span>
-            </div>
-
-            <div class="p-2.5 rounded bg-[#070b14] border border-slate-800 flex flex-col justify-between">
-              <span class="mono text-[9px] text-slate-400 uppercase">RFC 7489 DMARC</span>
-              <span id="dmarcVal" class="mono text-base font-bold text-slate-300 my-0.5">--</span>
-              <span id="dmarcInfo" class="mono text-[8px] text-slate-500 truncate">Policy alignment</span>
-            </div>
+        <!-- Geospatial Origin Coordinates -->
+        <div class="p-2.5 rounded glass-pill mono text-[10px] space-y-1.5 border border-white/5">
+          <div class="flex justify-between text-slate-400">
+            <span>RESOLVED ORIGIN:</span>
+            <span id="intelLocation" class="text-cyan-300 font-bold">AWAITING FEED</span>
           </div>
-
-          <!-- Chronological Hop Timeline -->
-          <div class="p-2.5 rounded bg-[#070b14] border border-slate-800 shrink-0">
-            <div class="flex justify-between items-center pb-1 border-b border-slate-800/80 mb-2">
-              <span class="mono text-[9px] text-slate-400 font-bold uppercase">Chronological Relay Hops & Latency Anomalies</span>
-              <span id="hopSummary" class="mono text-[9px] text-slate-500">0 Hops Tracked</span>
-            </div>
-            <div id="hopList" class="grid grid-cols-3 gap-2">
-              <div class="p-2 rounded bg-[#05070c] border border-slate-800 mono text-[9px] text-slate-500 text-center">
-                Awaiting email ingestion...
-              </div>
-            </div>
+          <div class="flex justify-between text-slate-400">
+            <span>COORDINATES:</span>
+            <span id="intelCoords" class="text-slate-200">0.0000° N, 0.0000° E</span>
           </div>
-
-          <!-- Raw Disassembled MIME Headers -->
-          <div class="flex-1 p-2.5 rounded bg-[#070b14] border border-slate-800 flex flex-col min-h-[160px]">
-            <span class="mono text-[9px] text-slate-400 font-bold uppercase pb-1 border-b border-slate-800/80 mb-1">
-              Disassembled RFC-822 MIME Headers
-            </span>
-            <pre id="rawStream" class="flex-1 mono text-[10px] text-slate-300 bg-[#05070c] p-2 rounded border border-slate-800/80 overflow-auto select-text leading-relaxed">// Ingest email or select a tactical scenario to examine unfolded headers.</pre>
+          <div class="flex justify-between text-slate-400">
+            <span>ASN / ROUTE:</span>
+            <span id="intelAsn" class="text-slate-300 truncate max-w-[130px]">--</span>
           </div>
         </div>
+      </aside>
 
-        <!-- VIEW 2: Geospatial Map -->
-        <div id="view-map" class="h-full w-full hidden rounded border border-slate-800 overflow-hidden">
-          <div id="leafletMap"></div>
+      <!-- Center Reticle / Tactical Target Compass -->
+      <div class="flex flex-col items-center justify-center text-center pointer-events-none">
+        <div class="relative flex items-center justify-center w-28 h-28">
+          <div class="reticle-ring w-20 h-20"></div>
+          <div class="absolute w-28 h-28 border border-cyan-500/20 rounded-full"></div>
+          <div class="absolute w-20 h-20 border border-dashed border-cyan-400/40 rounded-full animate-spin" style="animation-duration: 20s;"></div>
+          <i data-lucide="target" class="w-8 h-8 text-cyan-400/70"></i>
         </div>
-
-        <!-- VIEW 3: Palantir Entity Graph -->
-        <div id="view-graph" class="h-full w-full hidden rounded border border-slate-800 overflow-hidden">
-          <div id="entityGraph"></div>
-        </div>
-
-        <!-- VIEW 4: MITRE ATT&CK Matrix -->
-        <div id="view-mitre" class="h-full hidden overflow-y-auto space-y-2 p-1">
-          <div class="p-3 rounded bg-[#070b14] border border-slate-800 mono text-xs space-y-2">
-            <div class="font-bold text-red-400 border-b border-slate-800 pb-1 flex justify-between">
-              <span>T1566.002 - SPEARPHISHING LINK</span>
-              <span class="text-slate-500">INITIAL ACCESS</span>
-            </div>
-            <p class="text-slate-300 text-[11px]">Adversary sent email with embedded malicious link impersonating legitimate account service update.</p>
-            <div class="p-2 rounded bg-[#05070c] text-[10px] text-amber-400">
-              Mitigation: Enforce DMARC quarantine policy and disable hyperlinked URL execution in sandbox.
-            </div>
-          </div>
-
-          <div class="p-3 rounded bg-[#070b14] border border-slate-800 mono text-xs space-y-2">
-            <div class="font-bold text-red-400 border-b border-slate-800 pb-1 flex justify-between">
-              <span>T1586.002 - EMAIL ACCOUNTS: DOMAIN HOMOGLYPH</span>
-              <span class="text-slate-500">RESOURCE DEVELOPMENT</span>
-            </div>
-            <p class="text-slate-300 text-[11px]">Adversary registered punycode domain replacing ASCII characters with lookalike Cyrillic characters.</p>
-            <div class="p-2 rounded bg-[#05070c] text-[10px] text-amber-400">
-              Mitigation: Gateway rule to flag all incoming Punycode (xn--) formatted email addresses.
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </main>
-
-    <!-- Right Rail: Threat Dossier & Hash Anchor -->
-    <aside class="w-72 border-l border-slate-800 bg-[#06080e] p-3 flex flex-col justify-between shrink-0">
-      <div class="space-y-3">
-        <div>
-          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80 mb-2">
-            <span class="mono text-[10px] text-slate-400 uppercase font-bold tracking-wider">Origin Intelligence</span>
-            <span class="mono text-[9px] text-blue-400">MAXMIND MMDB</span>
-          </div>
-          <div class="p-2.5 rounded bg-[#080b12] border border-slate-800 mono text-[9px] space-y-2">
-            <div class="flex justify-between">
-              <span class="text-slate-500">ORIGIN IP:</span>
-              <span id="dossierIp" class="text-slate-200 font-bold">--</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-slate-500">LOCATION:</span>
-              <span id="dossierGeo" class="text-slate-200 truncate max-w-[120px]">--</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-slate-500">ASN / ROUTE:</span>
-              <span id="dossierAsn" class="text-slate-200 truncate max-w-[120px]">--</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-slate-500">TOR EXIT NODE:</span>
-              <span id="dossierTor" class="text-slate-200">--</span>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80 mb-2">
-            <span class="mono text-[10px] text-slate-400 uppercase font-bold tracking-wider">Cryptographic Hash Seal</span>
-            <span class="mono text-[9px] text-emerald-400">SHA-256</span>
-          </div>
-          <div class="p-2.5 rounded bg-[#080b12] border border-slate-800 mono text-[9px] space-y-2">
-            <div class="text-slate-500 text-[8px]">EVIDENCE RECORD HASH:</div>
-            <div id="dossierHash" class="text-slate-300 text-[9px] break-all bg-[#05070c] p-1.5 rounded border border-slate-800">
-              e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-            </div>
-            <div class="flex justify-between text-slate-400 text-[8px]">
-              <span>IMMUTABILITY:</span>
-              <span class="text-emerald-400 font-bold">FORWARD-LINKED</span>
-            </div>
-          </div>
+        <div id="targetCallout" class="mt-2 mono text-[10px] tracking-widest text-cyan-300 font-bold glass-pill px-3 py-0.5 rounded">
+          ORBITAL LOCK // AWAITING STREAM
         </div>
       </div>
 
-      <!-- Action -->
-      <div class="pt-2 border-t border-slate-800 space-y-1.5">
-        <button onclick="triggerPdfExport()" class="w-full py-2 px-2.5 rounded bg-red-950/60 hover:bg-red-900 border border-red-500/60 text-red-200 mono text-[10px] font-bold flex items-center justify-center gap-1.5 transition">
-          <i data-lucide="shield" class="w-3.5 h-3.5 text-red-400"></i>
-          <span>GENERATE COURT EVIDENCE PDF</span>
+      <!-- Right Forensic Telemetry & Attestation Dossier -->
+      <aside class="w-96 glass-hud p-3.5 flex flex-col gap-3 pointer-events-auto max-h-[82vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-1.5 border-b border-white/10">
+          <span class="mono text-[10px] font-bold text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
+            <i data-lucide="cpu" class="w-3 h-3 text-cyan-400"></i>
+            Forensic Attestation
+          </span>
+          <span id="verdictBadge" class="mono text-[9px] px-1.5 py-0.2 rounded font-bold text-slate-400 glass-pill">
+            STANDBY
+          </span>
+        </div>
+
+        <!-- Threat Score Dial -->
+        <div class="p-3 rounded glass-pill flex items-center justify-between border border-white/5">
+          <div>
+            <span class="mono text-[9px] text-slate-400 uppercase tracking-wider block">COMPOSITE THREAT INDEX</span>
+            <div class="flex items-baseline gap-1 mt-0.5">
+              <span id="threatScore" class="mono text-3xl font-bold text-slate-400">--</span>
+              <span class="mono text-xs text-slate-500">/ 100</span>
+            </div>
+          </div>
+          <div id="scoreRing" class="w-12 h-12 rounded-full border-2 border-slate-700 flex items-center justify-center mono text-xs font-bold text-slate-400">
+            --
+          </div>
+        </div>
+
+        <!-- Protocol Triad (SPF / DKIM / DMARC) -->
+        <div class="grid grid-cols-3 gap-2">
+          <div class="p-2 rounded glass-pill border border-white/5 text-center">
+            <span class="mono text-[8px] text-slate-400 block">RFC 7208 SPF</span>
+            <span id="spfVerdict" class="mono text-xs font-bold text-slate-300 mt-0.5 block">--</span>
+          </div>
+          <div class="p-2 rounded glass-pill border border-white/5 text-center">
+            <span class="mono text-[8px] text-slate-400 block">RFC 6376 DKIM</span>
+            <span id="dkimVerdict" class="mono text-xs font-bold text-slate-300 mt-0.5 block">--</span>
+          </div>
+          <div class="p-2 rounded glass-pill border border-white/5 text-center">
+            <span class="mono text-[8px] text-slate-400 block">RFC 7489 DMARC</span>
+            <span id="dmarcVerdict" class="mono text-xs font-bold text-slate-300 mt-0.5 block">--</span>
+          </div>
+        </div>
+
+        <!-- Disassembled Headers Console -->
+        <div class="flex-1 flex flex-col gap-1 min-h-[140px]">
+          <span class="mono text-[9px] text-slate-400 uppercase font-semibold">Header Disassembly</span>
+          <pre id="rawHeaders" class="flex-1 mono text-[9px] text-slate-300 bg-black/60 p-2.5 rounded border border-white/5 overflow-auto leading-tight select-text">// Stream ingestion idle.</pre>
+        </div>
+
+        <!-- Court Dossier Export Button -->
+        <button onclick="downloadPdf()" class="w-full py-2.5 px-3 rounded bg-red-950/80 hover:bg-red-900 border border-red-500/60 text-red-100 mono text-[10px] font-bold flex items-center justify-center gap-2 transition cursor-pointer shadow-lg shadow-red-950/40">
+          <i data-lucide="file-text" class="w-3.5 h-3.5 text-red-400"></i>
+          <span>EXPORT COURT-ADMISSIBLE DOSSIER (PDF)</span>
         </button>
-        <span class="mono text-[8px] text-slate-500 block text-center">ISO/IEC 27037 ADMISSIBLE</span>
+      </aside>
+
+    </div>
+
+    <!-- 3. Bottom Chronological Intercept Ribbon -->
+    <footer class="w-full glass-hud p-3 pointer-events-auto">
+      <div class="flex items-center justify-between pb-1.5 border-b border-white/10 mb-2">
+        <div class="flex items-center gap-2">
+          <i data-lucide="git-commit" class="w-3.5 h-3.5 text-cyan-400"></i>
+          <span class="mono text-[10px] font-bold uppercase tracking-wider text-slate-200">
+            Multi-Hop Chronological Intercept Vector
+          </span>
+        </div>
+        <span id="hopCount" class="mono text-[9px] text-slate-400">AWAITING HOPS</span>
       </div>
-    </aside>
+
+      <div id="hopContainer" class="grid grid-cols-4 gap-2">
+        <div class="p-2 rounded glass-pill border border-white/5 mono text-[9px] text-slate-500 text-center col-span-4">
+          Execute a forensic scan to visualize geospatial trajectory hops.
+        </div>
+      </div>
+    </footer>
 
   </div>
 
   <script>
     lucide.createIcons();
 
-    // Clock
-    setInterval(() => {
+    // 1. Initialize God's Eye Geospatial Viewport
+    const map = L.map('godsEyeMap', {
+      center: [30.0, 15.0],
+      zoom: 3,
+      zoomControl: false,
+      attributionControl: false
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+    }).addTo(map);
+
+    let activeMarkers = [];
+    let activeTrajectory = null;
+
+    function plotGodsEyeHops(coordsList) {
+      // Clear previous vectors
+      activeMarkers.forEach(m => map.removeLayer(m));
+      if (activeTrajectory) map.removeLayer(activeTrajectory);
+      activeMarkers = [];
+
+      if (!coordsList || coordsList.length === 0) return;
+
+      const latlngs = coordsList.map(c => [c.lat, c.lng]);
+
+      // Plot Glowing Reticle Markers
+      coordsList.forEach((coord, idx) => {
+        const isOrigin = idx === 0;
+        const marker = L.circleMarker([coord.lat, coord.lng], {
+          radius: isOrigin ? 8 : 5,
+          color: isOrigin ? '#ef4444' : '#06b6d4',
+          fillColor: isOrigin ? '#f43f5e' : '#38bdf8',
+          fillOpacity: 0.9,
+          weight: 2
+        }).addTo(map);
+        activeMarkers.push(marker);
+      });
+
+      // Draw Neon Vector Polyline between hops
+      activeTrajectory = L.polyline(latlngs, {
+        color: '#06b6d4',
+        weight: 2,
+        dashArray: '6, 8',
+        opacity: 0.8
+      }).addTo(map);
+
+      // Pan & Zoom camera to fit target trajectory
+      map.flyToBounds(latlngs, { padding: [120, 120], duration: 1.8 });
+    }
+
+    // 2. UTC Clock Sync
+    function updateClock() {
       const now = new Date();
       document.getElementById('utcClock').innerText = "UTC " + now.toUTCString().split(' ')[4];
-    }, 1000);
-
-    let activeEmailId = null;
-    let mapInstance = null;
-    let networkInstance = null;
-
-    // View Switching
-    function switchTab(viewName) {
-      ['telemetry', 'map', 'graph', 'mitre'].forEach(v => {
-        document.getElementById(`view-${v}`).classList.add('hidden');
-        document.getElementById(`tab-${v}`).className = "px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400";
-      });
-      document.getElementById(`view-${viewName}`).classList.remove('hidden');
-      document.getElementById(`tab-${viewName}`).className = "px-2.5 py-1 rounded bg-slate-800 text-slate-100 font-bold border border-slate-700";
-
-      if (viewName === 'map' && !mapInstance) initMap();
-      if (viewName === 'graph' && !networkInstance) initGraph();
     }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    // Leaflet Dark Map Init
-    function initMap() {
-      mapInstance = L.map('leafletMap').setView([50.1109, 8.6821], 4);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-      }).addTo(mapInstance);
+    let currentEmailId = null;
 
-      // Default Frankfurt marker (Tor node)
-      L.marker([50.1109, 8.6821]).addTo(mapInstance)
-        .bindPopup('<b style="color:red;">Origin Tor Relay</b><br>IP: 185.220.101.42 (Frankfurt, DE)').openPopup();
-      
-      // Target Receiver marker
-      L.marker([37.7749, -122.4194]).addTo(mapInstance)
-        .bindPopup('<b>Target MX Relay</b><br>San Francisco, CA');
-    }
-
-    // Vis.js Graph Init
-    function initGraph() {
-      const container = document.getElementById('entityGraph');
-      const data = {
-        nodes: new vis.DataSet([
-          { id: 1, label: 'Email Ingestion\n(0x8F4C)', shape: 'diamond', color: '#ef4444' },
-          { id: 2, label: 'Sender Domain\npaypal-security.com', shape: 'box', color: '#f59e0b' },
-          { id: 3, label: 'Relay IP\n185.220.101.42', shape: 'ellipse', color: '#ef4444' },
-          { id: 4, label: 'AS206238\n(Tor Exit Relay)', shape: 'database', color: '#38bdf8' },
-          { id: 5, label: 'Cryptographic Block\n#4492 Intact', shape: 'box', color: '#10b981' }
-        ]),
-        edges: new vis.DataSet([
-          { from: 1, to: 2, label: 'Spoofed Header', color: '#ef4444' },
-          { from: 1, to: 3, label: 'Received Hop 1', color: '#ef4444' },
-          { from: 3, to: 4, label: 'BGP Route', color: '#38bdf8' },
-          { from: 1, to: 5, label: 'SHA-256 Chain', color: '#10b981' }
-        ])
-      };
-      const options = {
-        nodes: { font: { face: 'JetBrains Mono', color: '#ffffff', size: 11 } },
-        physics: { stabilization: true }
-      };
-      networkInstance = new vis.Network(container, data, options);
-    }
-
-    // Ledger Verification
-    async function verifyLedger() {
+    // 3. Re-Verify Ledger
+    async function runAuditVerify() {
       try {
         const res = await fetch("/api/v1/integrity/verify");
         const json = await res.json();
         const badge = document.getElementById("ledgerBadge");
         if (json.chain_valid || json.is_intact) {
-          const blocks = json.total_blocks || json.verified_blocks || 0;
-          badge.className = "mono text-[10px] px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5";
-          badge.innerHTML = `<i data-lucide="shield-check" class="w-3.5 h-3.5"></i><span>CHAIN INTACT (${blocks} BLOCKS)</span>`;
+          const blocks = json.verified_blocks || json.total_blocks || 0;
+          badge.className = "mono text-[10px] px-2.5 py-1 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5";
+          badge.innerHTML = `<i data-lucide="shield-check" class="w-3.5 h-3.5"></i><span>AUDIT CHAIN: INTACT (${blocks} BLOCKS)</span>`;
         } else {
-          badge.className = "mono text-[10px] px-2 py-0.5 rounded bg-red-950/80 text-red-400 border border-red-500 flex items-center gap-1.5 animate-pulse";
-          badge.innerHTML = `<i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i><span>TAMPERED AT BLOCK #${json.tampered_block_index || json.first_tampered_index}</span>`;
+          const tIndex = json.tampered_block_index != null ? json.tampered_block_index : (json.first_tampered_index != null ? json.first_tampered_index : "ERR");
+          badge.className = "mono text-[10px] px-2.5 py-1 rounded bg-red-950/80 text-red-400 border border-red-500 flex items-center gap-1.5 animate-pulse";
+          badge.innerHTML = `<i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i><span>TAMPERED: BLOCK #${tIndex}</span>`;
         }
         lucide.createIcons();
       } catch (err) {
@@ -406,27 +386,27 @@
       }
     }
 
-    // Backend Analysis Runner
-    async function analyzeStream(file) {
+    // 4. Ingestion & Analysis Engine
+    async function analyzeEmlFile(file) {
       const formData = new FormData();
       formData.append("file", file);
 
-      document.getElementById("scoreVal").innerText = "...";
-      document.getElementById("activeScanStatus").innerText = "RUNNING RFC PROTOCOL FORENSICS...";
+      document.getElementById("threatScore").innerText = "...";
+      document.getElementById("targetCallout").innerText = "SATELLITE INTERCEPT: RUNNING RFC PROTOCOL CHECKS...";
 
       try {
-        const res = await fetch("/api/v1/analyze", { method: "POST", body: formData });
-        const data = await res.json();
-        populateInterface(data);
+        const response = await fetch("/api/v1/analyze", { method: "POST", body: formData });
+        const data = await response.json();
+        renderAnalysis(data);
       } catch (e) {
-        alert("Forensics failure: " + e.message);
+        alert("Forensic analysis failed: " + e.message);
       }
     }
 
-    function populateInterface(data) {
-      activeEmailId = data.email_id || "current_case";
+    function renderAnalysis(data) {
+      currentEmailId = data.email_id || "eml_current";
 
-      // 1. Scoring (Support both contracts: scoring / risk_assessment / root threat_score)
+      // Threat Score & Dial (support scoring, risk_assessment, threat_score)
       const score = (data.scoring && data.scoring.composite_threat_score != null)
         ? data.scoring.composite_threat_score
         : ((data.risk_assessment && data.risk_assessment.composite_threat_score != null)
@@ -438,115 +418,125 @@
         : ((data.risk_assessment && data.risk_assessment.verdict_tier)
           ? data.risk_assessment.verdict_tier
           : (data.verdict_tier || data.verdict || "UNKNOWN"));
-
-      const scoreEl = document.getElementById("scoreVal");
-      scoreEl.innerText = score;
-      scoreEl.className = "mono text-3xl font-bold " + (score > 60 ? "text-red-500" : (score > 20 ? "text-amber-400" : "text-emerald-400"));
       
-      const vText = document.getElementById("verdictText");
-      vText.innerText = tier;
-      vText.className = "mono text-[8px] font-bold " + (score > 60 ? "text-red-400" : (score > 20 ? "text-amber-400" : "text-emerald-400"));
+      const scoreEl = document.getElementById("threatScore");
+      const ringEl = document.getElementById("scoreRing");
+      scoreEl.innerText = score;
+      ringEl.innerText = score;
 
-      // 2. Protocols (Support protocol_forensics or forensics)
-      const proto = data.protocol_forensics || data.forensics;
-      if (proto) {
-        if (proto.spf) {
-          document.getElementById("spfVal").innerText = (proto.spf.verdict || "--").toUpperCase();
-          document.getElementById("spfVal").className = "mono text-base font-bold my-0.5 " + (proto.spf.verdict === "pass" ? "text-emerald-400" : "text-red-400");
-          document.getElementById("spfInfo").innerText = `Domain: ${proto.spf.domain || 'none'}`;
+      const isMalicious = score > 60;
+      const isWarn = score > 20 && score <= 60;
+      const colorClass = isMalicious ? "text-red-500" : (isWarn ? "text-amber-400" : "text-emerald-400");
+      const borderClass = isMalicious ? "border-red-500 text-red-400" : (isWarn ? "border-amber-500 text-amber-400" : "border-emerald-500 text-emerald-400");
+
+      scoreEl.className = "mono text-3xl font-bold " + colorClass;
+      ringEl.className = "w-12 h-12 rounded-full border-2 flex items-center justify-center mono text-xs font-bold " + borderClass;
+
+      const verdictEl = document.getElementById("verdictBadge");
+      verdictEl.innerText = tier;
+      verdictEl.className = "mono text-[9px] px-1.5 py-0.2 rounded font-bold glass-pill " + colorClass;
+
+      document.getElementById("targetCallout").innerText = `LOCK ACQUIRED // ${tier} (${score}/100)`;
+
+      // Protocol Checks (support forensics or protocol_forensics)
+      const f = data.forensics || data.protocol_forensics;
+      if (f) {
+        if (f.spf) {
+          document.getElementById("spfVerdict").innerText = (f.spf.verdict || "--").toUpperCase();
+          document.getElementById("spfVerdict").className = "mono text-xs font-bold mt-0.5 block " + (f.spf.verdict === "pass" ? "text-emerald-400" : "text-red-400");
         }
-        if (proto.dkim) {
-          document.getElementById("dkimVal").innerText = (proto.dkim.verdict || "--").toUpperCase();
-          document.getElementById("dkimVal").className = "mono text-base font-bold my-0.5 " + (proto.dkim.verdict === "pass" ? "text-emerald-400" : "text-red-400");
-          document.getElementById("dkimInfo").innerText = `Selector: ${proto.dkim.selector || 'none'}`;
+        if (f.dkim) {
+          document.getElementById("dkimVerdict").innerText = (f.dkim.verdict || "--").toUpperCase();
+          document.getElementById("dkimVerdict").className = "mono text-xs font-bold mt-0.5 block " + (f.dkim.verdict === "pass" ? "text-emerald-400" : "text-red-400");
         }
-        if (proto.dmarc) {
-          document.getElementById("dmarcVal").innerText = (proto.dmarc.verdict || "--").toUpperCase();
-          document.getElementById("dmarcVal").className = "mono text-base font-bold my-0.5 " + (proto.dmarc.verdict === "pass" ? "text-emerald-400" : "text-red-400");
-          document.getElementById("dmarcInfo").innerText = `Policy: ${proto.dmarc.policy || 'none'}`;
+        if (f.dmarc) {
+          document.getElementById("dmarcVerdict").innerText = (f.dmarc.verdict || "--").toUpperCase();
+          document.getElementById("dmarcVerdict").className = "mono text-xs font-bold mt-0.5 block " + (f.dmarc.verdict === "pass" ? "text-emerald-400" : "text-red-400");
         }
       }
 
-      // 3. Hops (Support relay_hops or hops)
-      const hops = (proto && (proto.relay_hops || proto.hops)) ? (proto.relay_hops || proto.hops) : [];
-      document.getElementById("hopSummary").innerText = `${hops.length} Hops Computed`;
-      const hopList = document.getElementById("hopList");
-      hopList.innerHTML = "";
-      hops.forEach((h, i) => {
-        const card = document.createElement("div");
-        card.className = "p-2 rounded bg-[#05070c] border border-slate-800 mono text-[9px] space-y-0.5";
-        const delay = h.transit_delay_seconds != null ? h.transit_delay_seconds : 0;
-        const host = h.from_host || h.sending_host || h.ip || h.ip_address || 'Proxy';
-        const ip = h.ip || h.ip_address || 'Internal';
-        card.innerHTML = `
-          <div class="flex justify-between text-slate-400 font-bold">
-            <span>HOP #${i+1}</span>
-            <span class="${delay < 0 ? 'text-red-400 font-bold' : 'text-slate-500'}">${delay}s</span>
-          </div>
-          <div class="text-slate-200 truncate font-semibold">${host}</div>
-          <div class="text-[8px] text-slate-500 truncate">${ip}</div>
-        `;
-        hopList.appendChild(card);
-      });
+      // Origin Geo & Map Plotting (support intelligence or origin_intelligence)
+      let trajectoryCoords = [];
+      const intel = data.intelligence || data.origin_intelligence;
+      if (intel && intel.geolocation) {
+        const geo = intel.geolocation;
+        document.getElementById("intelLocation").innerText = `${geo.city || 'Frankfurt'}, ${geo.country_name || 'Germany'}`;
+        document.getElementById("intelCoords").innerText = `${geo.latitude ? Number(geo.latitude).toFixed(4) : '50.1109'}° N, ${geo.longitude ? Number(geo.longitude).toFixed(4) : '8.6821'}° E`;
+        
+        const asnObj = intel.asn || {};
+        document.getElementById("intelAsn").innerText = asnObj.autonomous_system_organization || asnObj.as_org || asnObj.as_name || (asnObj.asn ? `AS${asnObj.asn}` : "Tor Relay Node");
 
-      // 4. MIME
-      if (proto && proto.headers && proto.headers.all_headers) {
+        // Seed trajectory starting at resolved origin IP coordinates
+        const originLat = geo.latitude || 50.1109;
+        const originLng = geo.longitude || 8.6821;
+        trajectoryCoords.push({ lat: originLat, lng: originLng });
+        
+        // Add destination hub to complete God's eye vector
+        trajectoryCoords.push({ lat: 28.6139, lng: 77.2090 }); // Target Enterprise MX
+        plotGodsEyeHops(trajectoryCoords);
+      }
+
+      // Hop Ribbon (support forensics.hops, protocol_forensics.relay_hops)
+      const hops = (f && (f.hops || f.relay_hops)) ? (f.hops || f.relay_hops) : [];
+      document.getElementById("hopCount").innerText = `${hops.length} INTERCEPTED HOPS`;
+      const hopBox = document.getElementById("hopContainer");
+      hopBox.innerHTML = "";
+
+      if (hops.length === 0) {
+        hopBox.innerHTML = '<div class="p-2 rounded glass-pill border border-white/5 mono text-[9px] text-slate-400 col-span-4 text-center">Single-hop direct delivery</div>';
+      } else {
+        hops.forEach((h, idx) => {
+          const div = document.createElement("div");
+          div.className = "p-2 rounded glass-pill border border-white/5 mono text-[9px] space-y-0.5";
+          const delay = h.transit_delay_seconds != null ? h.transit_delay_seconds : 0;
+          const host = h.sending_host || h.from_host || h.ip_address || h.ip || 'Proxy Relay';
+          const ip = h.ip_address || h.ip || 'Private Subnet';
+          div.innerHTML = `
+            <div class="flex justify-between text-slate-400 font-bold">
+              <span>HOP #${idx + 1}</span>
+              <span class="${delay < 0 ? 'text-red-400' : 'text-slate-400'}">${delay}s</span>
+            </div>
+            <div class="text-cyan-300 font-semibold truncate">${host}</div>
+            <div class="text-[8px] text-slate-500 truncate">${ip}</div>
+          `;
+          hopBox.appendChild(div);
+        });
+      }
+
+      // Raw Headers
+      if (data.raw_headers) {
+        document.getElementById("rawHeaders").innerText = data.raw_headers;
+      } else if (f && f.headers && f.headers.all_headers) {
         let headerStr = "";
-        for (const [k, v] of Object.entries(proto.headers.all_headers)) {
+        for (const [k, v] of Object.entries(f.headers.all_headers)) {
           headerStr += `${k}: ${v}\n`;
         }
-        document.getElementById("rawStream").innerText = headerStr;
-      } else if (data.raw_headers) {
-        document.getElementById("rawStream").innerText = data.raw_headers;
+        document.getElementById("rawHeaders").innerText = headerStr;
       }
 
-      // 5. Origin Dossier (Support origin_intelligence or intelligence)
-      const intel = data.origin_intelligence || data.intelligence;
-      if (intel) {
-        document.getElementById("dossierIp").innerText = intel.target_ip || (proto && proto.origin_ip) || "--";
-        const geo = intel.geolocation || {};
-        document.getElementById("dossierGeo").innerText = `${geo.city || 'Frankfurt'}, ${geo.country_name || 'Germany'}`;
-        const asn = intel.asn || {};
-        document.getElementById("dossierAsn").innerText = asn.as_org || asn.as_name || (asn.asn ? `AS${asn.asn}` : '--');
-        const isTor = (intel.threat_assessment && intel.threat_assessment.is_tor_exit_node) || intel.is_tor_exit;
-        document.getElementById("dossierTor").innerText = isTor ? "YES (CONFIRMED)" : "NO";
-        document.getElementById("dossierTor").className = isTor ? "text-red-400 font-bold" : "text-emerald-400";
-
-        // Update Map dynamically if available
-        if (mapInstance && geo.latitude && geo.longitude) {
-          L.marker([geo.latitude, geo.longitude]).addTo(mapInstance)
-            .bindPopup(`<b>Origin Hop</b><br>IP: ${intel.target_ip}<br>${geo.city}, ${geo.country_name}`).openPopup();
-          mapInstance.setView([geo.latitude, geo.longitude], 4);
-        }
-      }
-
-      // 6. Evidence Hash
-      if (data.audit_block) {
-        document.getElementById("dossierHash").innerText = data.audit_block.current_hash || data.audit_block.evidence_hash || "INSPECT_BLOCK";
-      }
-
-      document.getElementById("activeScanStatus").innerText = "FORENSIC DECOMPOSITION COMPLETE";
-      verifyLedger();
+      runAuditVerify();
     }
 
-    async function loadScenario(name) {
+    // Quick Scenarios
+    async function triggerPreload(filename) {
       try {
-        const res = await fetch(`/test-data/${name}.eml`);
-        if (!res.ok) throw new Error("Scenario sample not found");
+        const res = await fetch(`/test-data/${filename}.eml`);
+        if (!res.ok) throw new Error("Preload file not found");
         const blob = await res.blob();
-        const file = new File([blob], `${name}.eml`);
-        analyzeStream(file);
+        const file = new File([blob], `${filename}.eml`);
+        analyzeEmlFile(file);
       } catch (err) {
-        alert("Scenario loading failed: " + err.message);
+        alert("Preload failed: " + err.message);
       }
     }
 
-    function triggerPdfExport() {
-      if (!activeEmailId) {
-        alert("Execute a forensic scan first to compile court-admissible dossier.");
+    // PDF Export
+    function downloadPdf() {
+      if (!currentEmailId) {
+        alert("Execute a forensic scan first before exporting court-admissible PDF.");
         return;
       }
-      window.open(`/api/v1/reports/${activeEmailId}/pdf`, '_blank');
+      window.open(`/api/v1/reports/${currentEmailId}/pdf`, '_blank');
     }
 
     // Drag-and-drop bindings
@@ -555,17 +545,18 @@
 
     dropZone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => {
-      if (e.target.files.length) analyzeStream(e.target.files[0]);
-    });
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-red-500'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-red-500'));
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('border-red-500');
-      if (e.dataTransfer.files.length) analyzeStream(e.dataTransfer.files[0]);
+      if (e.target.files.length) analyzeEmlFile(e.target.files[0]);
     });
 
-    window.addEventListener('DOMContentLoaded', verifyLedger);
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-cyan-400'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-cyan-400'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-cyan-400');
+      if (e.dataTransfer.files.length) analyzeEmlFile(e.dataTransfer.files[0]);
+    });
+
+    window.addEventListener('DOMContentLoaded', runAuditVerify);
   </script>
 </body>
 </html>
