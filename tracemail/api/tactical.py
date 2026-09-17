@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional
 from backend.contracts.protocol_forensics import ProtocolForensicsResult
 from backend.contracts.origin_intelligence import OriginIntelligenceResult
 from backend.contracts.risk_scoring import RiskFusionResult
+from backend.intelligence.geoip import resolve_offline_ip
 
 # Preset Tactical Threat Scenarios for SIH Defense Demo
 PRESET_SCENARIOS = {
@@ -191,22 +192,62 @@ def format_tactical_dashboard_payload(
         for s in fusion_res.triggered_signals
     ]
 
-    # Format relay hops for Leaflet interactive map
+    # Format relay hops for Leaflet interactive map with full cartographic signatures
     hops = []
     for h in protocol_res.relay_hops:
-        lat = origin_res.geolocation.latitude if (h.ip == protocol_res.origin_ip) else None
-        lon = origin_res.geolocation.longitude if (h.ip == protocol_res.origin_ip) else None
+        hop_lat = None
+        hop_lon = None
+        hop_city = "MTA Transit"
+        hop_country = "Global Network"
+        hop_isp = "Internet Routing System"
+        hop_status = "public"
+
+        if h.is_private_ip:
+            hop_status = "private"
+            hop_city = "Enterprise Ingress Gateway"
+            hop_country = "Secured Internal LAN"
+            hop_isp = "RFC 1918 Perimeter"
+            # Designated corporate perimeter coordinates (Enterprise SOC)
+            hop_lat = 28.6139
+            hop_lon = 77.2090
+        elif h.ip and h.ip != "Unknown":
+            h_geo, h_asn = resolve_offline_ip(h.ip)
+            if h_geo.latitude != 0.0 or h_geo.longitude != 0.0:
+                hop_lat = h_geo.latitude
+                hop_lon = h_geo.longitude
+            hop_city = h_geo.city or ("Tor Exit Gateway" if h.ip == "185.220.101.42" else "Transit Relay")
+            hop_country = h_geo.country_name or "Transit Network"
+            hop_isp = h_asn.as_org or (h_asn.as_name or "Autonomous System")
+            if h.ip == "185.220.101.42" or (origin_res.threat_assessment.is_tor_exit_node and h.ip == protocol_res.origin_ip):
+                hop_status = "tor"
+            elif origin_res.threat_assessment.is_known_proxy_vpn and h.ip == protocol_res.origin_ip:
+                hop_status = "bulletproof"
+            elif h.ip == protocol_res.origin_ip:
+                hop_status = "origin"
+
+        # If this hop matches the verified origin IP, ensure origin coordinates are used
+        if (h.ip == protocol_res.origin_ip) and origin_res.geolocation.latitude:
+            hop_lat = origin_res.geolocation.latitude
+            hop_lon = origin_res.geolocation.longitude
+            hop_city = origin_res.geolocation.city or hop_city
+            hop_country = origin_res.geolocation.country_name or hop_country
+            hop_isp = origin_res.asn.as_org or hop_isp
+
         hops.append({
             "hop_index": h.hop_number,
             "raw_header_snippet": f"from {h.from_host or 'unknown'} by {h.by_host or 'unknown'}",
             "ip": h.ip or "Unknown",
+            "from_host": h.from_host,
+            "by_host": h.by_host,
+            "transit_delay_seconds": h.transit_delay_seconds,
+            "is_private": h.is_private_ip,
             "geo": {
-                "city": origin_res.geolocation.city or "Relay Node" if lat else "MTA Transit",
-                "country": origin_res.geolocation.country_name or "Global Network" if lat else "Transit",
-                "isp": origin_res.asn.as_org or "Internet Routing System",
-                "lat": lat,
-                "lon": lon,
-                "status": "private" if h.is_private_ip else "success"
+                "city": hop_city,
+                "country": hop_country,
+                "isp": hop_isp,
+                "lat": hop_lat,
+                "lon": hop_lon,
+                "status": hop_status
             }
         })
 
@@ -360,28 +401,178 @@ def generate_stix_bundle(record: Dict[str, Any]) -> Dict[str, Any]:
         "objects": objects
     }
 
+def get_tactical_campaigns_summary() -> List[Dict[str, Any]]:
+    """Group analyzed incidents into correlated high-fidelity Threat Campaigns (Palantir style)."""
+    campaigns: Dict[str, Dict[str, Any]] = {}
+
+    for item in TACTICAL_CAMPAIGN_REGISTRY:
+        sender = item.get("sender", "")
+        domain = sender.split("@")[-1].lower() if "@" in sender else "unknown"
+        ip = item.get("origin_ip", "unknown")
+        verdict = item.get("verdict", "BENIGN")
+        attachments = item.get("attachments", {}).get("attachments", [])
+        has_exe = any(a.get("dangerous") or a.get("has_double_extension") for a in attachments)
+        is_tor = (item.get("origin_geo", {}).get("city") == "Tor Relay Node" 
+                  or ip == "185.220.101.42" 
+                  or any(m.get("detected") for m in item.get("mitre_attack", []) if m.get("technique") == "T1584.004"))
+        is_bec = ("wire" in (item.get("subject") or "").lower() 
+                  or "acquisition" in (item.get("subject") or "").lower() 
+                  or item.get("reply_to_mismatch", {}).get("mismatch"))
+
+        if is_tor or "paypal" in domain or "paypai" in domain:
+            c_key = "CAMP-TOR-CREDENTIAL-HARVEST"
+            c_name = "OPERATION COLD-PHISH // TOR CREDENTIAL HARVEST"
+            actor = "UNC-2814 (Fin-Targeting Syndicate)"
+        elif has_exe or "invoice" in (item.get("subject") or "").lower():
+            c_key = "CAMP-TROJAN-INVOICE-DROPPER"
+            c_name = "OPERATION VIPER-INVOICE // WEAPONIZED EXECUTABLES"
+            actor = "TA-505 / CLOP Affiliate Variant"
+        elif is_bec or "ceo" in (item.get("sender") or "").lower():
+            c_key = "CAMP-EXECUTIVE-BEC-WIRE"
+            c_name = "OPERATION APEX-FRAUD // EXECUTIVE IMPERSONATION"
+            actor = "SILVERTERRIER (BEC Syndicate)"
+        elif verdict == "BENIGN":
+            c_key = "CAMP-CORPORATE-AUTHORIZED"
+            c_name = "AUTHORIZED INTERNAL // ENTERPRISE COMMS"
+            actor = "LEGITIMATE CORPORATE INFRASTRUCTURE"
+        else:
+            c_key = f"CAMP-{domain.upper()}"
+            c_name = f"UNCLASSIFIED CLUSTER // {domain.upper()}"
+            actor = "UNKNOWN ADVERSARY CELL"
+
+        if c_key not in campaigns:
+            campaigns[c_key] = {
+                "campaign_id": c_key,
+                "name": c_name,
+                "threat_actor": actor,
+                "verdict": verdict,
+                "defcon": item.get("defcon", 5),
+                "defcon_title": item.get("defcon_title", "DEFCON 5"),
+                "max_score": item.get("score", 0),
+                "incident_count": 0,
+                "incident_ids": [],
+                "incidents": [],
+                "targets": set(),
+                "infrastructure_ips": set(),
+                "domains": set(),
+                "mitre_techniques": set(),
+                "earliest_seen": item.get("timestamp"),
+                "latest_seen": item.get("timestamp")
+            }
+
+        c = campaigns[c_key]
+        c["incident_count"] += 1
+        c["incident_ids"].append(item.get("id"))
+        c["incidents"].append({
+            "id": item.get("id"),
+            "subject": item.get("subject"),
+            "sender": item.get("sender"),
+            "score": item.get("score"),
+            "verdict": item.get("verdict"),
+            "timestamp": item.get("timestamp")
+        })
+        if item.get("score", 0) > c["max_score"]:
+            c["max_score"] = item.get("score", 0)
+            c["verdict"] = item.get("verdict", c["verdict"])
+            c["defcon"] = item.get("defcon", c["defcon"])
+            c["defcon_title"] = item.get("defcon_title", c["defcon_title"])
+        c["targets"].add(item.get("recipient", "unknown"))
+        if ip and ip != "Unknown":
+            c["infrastructure_ips"].add(ip)
+        if domain:
+            c["domains"].add(domain)
+        for m in item.get("mitre_attack", []):
+            if m.get("detected"):
+                c["mitre_techniques"].add(f"{m.get('technique')}: {m.get('name')}")
+        c["latest_seen"] = item.get("timestamp")
+
+    result = []
+    for c in campaigns.values():
+        result.append({
+            "campaign_id": c["campaign_id"],
+            "name": c["name"],
+            "threat_actor": c["threat_actor"],
+            "verdict": c["verdict"],
+            "defcon": c["defcon"],
+            "defcon_title": c["defcon_title"],
+            "max_score": c["max_score"],
+            "incident_count": c["incident_count"],
+            "incident_ids": c["incident_ids"],
+            "incidents": c["incidents"],
+            "targets": sorted(list(c["targets"])),
+            "infrastructure_ips": sorted(list(c["infrastructure_ips"])),
+            "domains": sorted(list(c["domains"])),
+            "mitre_techniques": sorted(list(c["mitre_techniques"])),
+            "earliest_seen": c["earliest_seen"],
+            "latest_seen": c["latest_seen"]
+        })
+    return sorted(result, key=lambda x: x["max_score"], reverse=True)
+
 def get_campaign_graph_nodes_and_edges() -> Dict[str, Any]:
-    """Generate Link-Analysis Correlation Graph across all analyzed attacks."""
+    """Generate Palantir Gotham Link-Analysis Correlation Graph across all analyzed attacks."""
     nodes = []
     edges = []
     seen = set()
 
+    campaign_clusters = get_tactical_campaigns_summary()
+    
+    # 1. Add Campaign and Threat Actor Nodes
+    for camp in campaign_clusters:
+        camp_id = f"camp_{camp['campaign_id']}"
+        if camp_id not in seen:
+            seen.add(camp_id)
+            nodes.append({
+                "id": camp_id,
+                "label": camp["name"],
+                "type": "campaign",
+                "verdict": camp["verdict"],
+                "score": camp["max_score"],
+                "defcon": camp["defcon"],
+                "metadata": {
+                    "actor": camp["threat_actor"],
+                    "incidents": camp["incident_count"],
+                    "targets": len(camp["targets"])
+                }
+            })
+
+        actor_id = f"actor_{camp['threat_actor'].split()[0]}"
+        if actor_id not in seen:
+            seen.add(actor_id)
+            nodes.append({
+                "id": actor_id,
+                "label": camp["threat_actor"],
+                "type": "actor",
+                "verdict": camp["verdict"],
+                "score": camp["max_score"],
+                "metadata": {"attributed_campaigns": [camp["name"]]}
+            })
+        edges.append({"source": actor_id, "target": camp_id, "relation": "ATTRIBUTED_TO"})
+
+    # 2. Add Incident Nodes & Link to Campaign
     for idx, item in enumerate(TACTICAL_CAMPAIGN_REGISTRY):
-        e_id = f"email_{idx}"
+        e_id = item.get("id", f"incident_{idx}")
         if e_id not in seen:
             seen.add(e_id)
             nodes.append({
                 "id": e_id,
-                "label": item.get("subject", "Untitled")[:36],
+                "label": item.get("subject", "Untitled")[:34],
                 "type": "email",
                 "verdict": item.get("verdict", "UNKNOWN"),
                 "score": item.get("score", 0),
                 "metadata": {
                     "sender": item.get("sender"),
-                    "recipient": item.get("recipient")
+                    "recipient": item.get("recipient"),
+                    "origin_ip": item.get("origin_ip")
                 }
             })
 
+        # Link to matching campaign
+        for camp in campaign_clusters:
+            if item.get("id") in camp["incident_ids"]:
+                edges.append({"source": f"camp_{camp['campaign_id']}", "target": e_id, "relation": "CONTAINS_INCIDENT"})
+                break
+
+        # 3. Add Domain Node
         sender = item.get("sender", "")
         domain = sender.split("@")[-1] if "@" in sender else "unknown-domain"
         d_id = f"domain_{domain}"
@@ -391,11 +582,13 @@ def get_campaign_graph_nodes_and_edges() -> Dict[str, Any]:
                 "id": d_id,
                 "label": domain,
                 "type": "domain",
-                "verdict": None,
-                "metadata": {"brand": domain}
+                "verdict": item.get("verdict"),
+                "score": item.get("score", 0),
+                "metadata": {"brand": domain, "sender": sender}
             })
         edges.append({"source": e_id, "target": d_id, "relation": "SENT_BY"})
 
+        # 4. Add IP Node
         ip = item.get("origin_ip")
         if ip and ip != "Unknown":
             ip_id = f"ip_{ip}"
@@ -405,9 +598,44 @@ def get_campaign_graph_nodes_and_edges() -> Dict[str, Any]:
                     "id": ip_id,
                     "label": ip,
                     "type": "ip",
-                    "verdict": None,
+                    "verdict": item.get("verdict"),
+                    "score": item.get("score", 0),
                     "metadata": item.get("origin_geo", {})
                 })
             edges.append({"source": e_id, "target": ip_id, "relation": "ROUTED_THROUGH"})
 
-    return {"nodes": nodes, "edges": edges}
+        # 5. Add Target Mailbox Node
+        recipient = item.get("recipient")
+        if recipient and recipient != "Unknown":
+            t_id = f"target_{recipient}"
+            if t_id not in seen:
+                seen.add(t_id)
+                nodes.append({
+                    "id": t_id,
+                    "label": recipient,
+                    "type": "target",
+                    "verdict": "TARGET",
+                    "score": 0,
+                    "metadata": {"mailbox": recipient}
+                })
+            edges.append({"source": e_id, "target": t_id, "relation": "TARGETS"})
+
+        # 6. Add Payload / Attachment Node (if any)
+        attachments = item.get("attachments", {}).get("attachments", [])
+        for att in attachments:
+            if att.get("dangerous") or att.get("has_double_extension"):
+                att_id = f"att_{att.get('filename')}"
+                if att_id not in seen:
+                    seen.add(att_id)
+                    nodes.append({
+                        "id": att_id,
+                        "label": att.get("filename"),
+                        "type": "malware",
+                        "verdict": "MALICIOUS",
+                        "score": 95,
+                        "metadata": {"sha256": att.get("sha256"), "size": att.get("size_bytes")}
+                    })
+                edges.append({"source": e_id, "target": att_id, "relation": "DROPS_PAYLOAD"})
+
+    return {"nodes": nodes, "edges": edges, "campaigns": campaign_clusters}
+

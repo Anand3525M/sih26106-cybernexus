@@ -5,10 +5,12 @@ from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import settings
-from backend.db.database import init_db, store_email_analysis, list_cases, get_email_analysis
+from backend.db.database import init_db, store_email_analysis, list_cases, get_email_analysis, get_db_connection
+import json as _json
 from backend.ingestion.parser import parse_eml_bytes, parse_eml_file
 from backend.forensics.protocols import evaluate_email_protocols
 from backend.intelligence.geoip import analyze_origin_intelligence
+from backend.intelligence.external_intel import ExternalThreatEnricher
 from backend.scoring.fusion import evaluate_risk_fusion
 from backend.reports.generator import generate_court_report
 from cases.integrity import IntegrityLedger
@@ -18,7 +20,8 @@ from backend.api.tactical import (
     TACTICAL_CAMPAIGN_REGISTRY,
     format_tactical_dashboard_payload,
     generate_stix_bundle,
-    get_campaign_graph_nodes_and_edges
+    get_campaign_graph_nodes_and_edges,
+    get_tactical_campaigns_summary
 )
 from contextlib import asynccontextmanager
 from backend.contracts.case_management import CaseCreateInput, CaseDetailContract
@@ -27,6 +30,9 @@ from backend.contracts.origin_intelligence import OriginIntelligenceResult
 
 # In-memory fast cache for recent forensic analyses
 ANALYSIS_CACHE: Dict[str, Tuple[ProtocolForensicsResult, OriginIntelligenceResult]] = {}
+
+# External Threat Intelligence Enricher (Shodan InternetDB, URLhaus, MalwareBazaar)
+external_enricher = ExternalThreatEnricher(timeout=3.0)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -153,7 +159,28 @@ async def analyze_email_file(file: UploadFile = File(...)):
         threat_score=threat_score
     )
 
-    # 7. Return Structured JSON adhering strictly to approved data contracts with UI aliases
+    # 7. External Threat Intelligence Enrichment (Shodan, URLhaus, MalwareBazaar)
+    enrichment = {"shodan": {}, "urlhaus_hits": [], "malware_bazaar_hits": []}
+    try:
+        # Probe Shodan InternetDB for origin IP ports/CVEs
+        if protocol_res.origin_ip:
+            enrichment["shodan"] = await external_enricher.probe_shodan_internetdb(protocol_res.origin_ip)
+
+        # Probe URLhaus for each extracted URL
+        for url in ingested.extracted_urls[:10]:  # Cap at 10 to avoid timeout storms
+            urlhaus_res = await external_enricher.probe_urlhaus(url)
+            if urlhaus_res.get("query_status") != "offline":
+                enrichment["urlhaus_hits"].append({"url": url, "result": urlhaus_res})
+
+        # Probe MalwareBazaar for attachment SHA-256 hashes
+        for att in ingested.attachments[:5]:  # Cap at 5
+            mb_res = await external_enricher.probe_malware_bazaar(att["sha256"])
+            if mb_res.get("query_status") != "offline":
+                enrichment["malware_bazaar_hits"].append({"filename": att["filename"], "sha256": att["sha256"], "result": mb_res})
+    except Exception:
+        pass  # Enrichment is best-effort; core pipeline must not break
+
+    # 8. Return Structured JSON adhering strictly to approved data contracts with UI aliases
     return {
         "status": "success",
         "email_id": protocol_res.email_id,
@@ -190,6 +217,7 @@ async def analyze_email_file(file: UploadFile = File(...)):
             }
         },
         "raw_headers": "\n".join(f"{k}: {v}" for k, v in ingested.headers.all_headers.items()),
+        "external_intelligence": enrichment,
         "audit_block": audit_block
     }
 
@@ -303,7 +331,9 @@ async def tactical_analyze_uploaded_file(file: UploadFile = File(...)):
     raw_bytes = await file.read()
     if not raw_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
-    return _run_pipeline_and_format_tactical(raw_bytes, file.filename)
+    result = _run_pipeline_and_format_tactical(raw_bytes, file.filename)
+    await manager.broadcast({"type": "incident", "data": result})
+    return result
 
 @app.post("/analyze/text", tags=["Tactical UI"])
 async def tactical_analyze_pasted_text(
@@ -334,7 +364,96 @@ async def tactical_analyze_pasted_text(
         raise HTTPException(status_code=400, detail="Email content is required.")
 
     raw_bytes = str(text_to_process).encode("utf-8")
-    return _run_pipeline_and_format_tactical(raw_bytes, "intercepted_sample.eml")
+    result = _run_pipeline_and_format_tactical(raw_bytes, "intercepted_sample.eml")
+    await manager.broadcast({"type": "incident", "data": result})
+    return result
+
+@app.post("/analyze/bulk", tags=["Tactical UI"])
+@app.post("/api/v1/ingest/batch", tags=["Forensics"])
+async def tactical_analyze_bulk_files(files: List[UploadFile] = File(...)):
+    """Analyze multiple uploaded .eml files asynchronously and broadcast to live threat stream."""
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded.")
+    results = []
+    for f in files:
+        if not f.filename:
+            continue
+        try:
+            raw_bytes = await f.read()
+            if not raw_bytes:
+                continue
+            rec = _run_pipeline_and_format_tactical(raw_bytes, f.filename)
+            await manager.broadcast({"type": "incident", "data": rec})
+            results.append(rec)
+        except Exception as err:
+            results.append({"filename": f.filename, "error": str(err), "status": "failed"})
+    return {
+        "status": "success",
+        "processed_count": len(results),
+        "incidents": results
+    }
+
+@app.post("/api/v1/ingest/sync-inbox", tags=["Forensics"])
+async def auto_sync_inbox_feed():
+    """
+    Automated Mailbox & Sample Ingestion Engine.
+    Scans test-data repository, ingests authentic .eml attack scenarios into the pipeline,
+    and streams them in real-time over the WebSocket threat stream.
+    """
+    sample_dir = Path("test-data")
+    if not sample_dir.exists():
+        sample_dir = settings.SAMPLES_DIR
+
+    eml_files = sorted(list(sample_dir.glob("*.eml")))
+    if not eml_files:
+        results = []
+        for k, sc in PRESET_SCENARIOS.items():
+            raw_bytes = sc["raw_email"].encode("utf-8")
+            rec = _run_pipeline_and_format_tactical(raw_bytes, f"{k}.eml")
+            await manager.broadcast({"type": "incident", "data": rec})
+            results.append(rec)
+        return {
+            "status": "success",
+            "source": "preset_scenarios",
+            "synced_count": len(results),
+            "incidents": results
+        }
+
+    results = []
+    for eml_path in eml_files:
+        try:
+            raw_bytes = eml_path.read_bytes()
+            rec = _run_pipeline_and_format_tactical(raw_bytes, eml_path.name)
+            await manager.broadcast({"type": "incident", "data": rec})
+            results.append(rec)
+        except Exception:
+            pass
+
+    return {
+        "status": "success",
+        "source": "test-data",
+        "synced_count": len(results),
+        "incidents": results
+    }
+
+@app.get("/api/v1/incidents", tags=["Tactical UI"])
+def get_all_incidents():
+    """Retrieve full catalog of ingested threat incidents with forensic metadata."""
+    return {
+        "status": "success",
+        "total_count": len(TACTICAL_CAMPAIGN_REGISTRY),
+        "incidents": list(reversed(TACTICAL_CAMPAIGN_REGISTRY))
+    }
+
+@app.get("/api/v1/campaigns", tags=["Tactical UI"])
+def get_campaigns_summary():
+    """Retrieve correlated multi-incident threat campaigns."""
+    campaigns = get_tactical_campaigns_summary()
+    return {
+        "status": "success",
+        "campaign_count": len(campaigns),
+        "campaigns": campaigns
+    }
 
 @app.get("/campaign/graph", tags=["Tactical UI"])
 def get_campaign_graph():
