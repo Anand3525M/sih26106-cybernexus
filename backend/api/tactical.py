@@ -288,6 +288,7 @@ def format_tactical_dashboard_payload(
 
     record = {
         "id": f"incident_{len(TACTICAL_CAMPAIGN_REGISTRY) + 1}",
+        "email_id": protocol_res.email_id,
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
         "subject": ingested_email.headers.subject,
         "sender": ingested_email.headers.from_address,
