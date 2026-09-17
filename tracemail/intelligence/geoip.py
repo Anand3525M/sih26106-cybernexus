@@ -18,6 +18,26 @@ from backend.contracts.origin_intelligence import (
 # Known Cyrillic/Greek homoglyph characters frequently used in domain spoofing
 SUSPICIOUS_HOMOGLYPH_CHARS = set("асеорхуіјѕԁԛѕ")
 
+_geoip_reader: Optional[geoip2.database.Reader] = None
+_geoip_reader_path: Optional[str] = None
+
+def get_geoip_reader(db_path: Path) -> Optional[geoip2.database.Reader]:
+    global _geoip_reader, _geoip_reader_path
+    path_str = str(db_path)
+    if _geoip_reader is not None and _geoip_reader_path == path_str:
+        return _geoip_reader
+    try:
+        if _geoip_reader is not None:
+            try:
+                _geoip_reader.close()
+            except Exception:
+                pass
+        _geoip_reader = geoip2.database.Reader(path_str)
+        _geoip_reader_path = path_str
+        return _geoip_reader
+    except Exception:
+        return None
+
 def resolve_offline_ip(ip: Optional[str]) -> Tuple[GeoLocationContract, AsnContract]:
     """Resolve IP location and ASN strictly via local MaxMind GeoLite2 binary database."""
     if not ip or is_private_or_local_ip(ip):
@@ -65,30 +85,32 @@ def resolve_offline_ip(ip: Optional[str]) -> Tuple[GeoLocationContract, AsnContr
         )
 
     try:
-        with geoip2.database.Reader(str(db_path)) as reader:
-            response = reader.city(ip)
-            
-            geo = GeoLocationContract(
-                country_code=response.country.iso_code or "UNKNOWN",
-                country_name=response.country.name or "Unknown Country",
-                city=response.city.name,
-                latitude=response.location.latitude,
-                longitude=response.location.longitude,
-                postal_code=response.postal.code,
-                accuracy_radius_km=response.location.accuracy_radius,
-                source_database="GeoLite2-City-Offline"
-            )
+        reader = get_geoip_reader(db_path)
+        if reader is None:
+            raise RuntimeError(f"Could not open GeoLite2 database: {db_path}")
+        response = reader.city(ip)
+        
+        geo = GeoLocationContract(
+            country_code=response.country.iso_code or "UNKNOWN",
+            country_name=response.country.name or "Unknown Country",
+            city=response.city.name,
+            latitude=response.location.latitude,
+            longitude=response.location.longitude,
+            postal_code=response.postal.code,
+            accuracy_radius_km=response.location.accuracy_radius,
+            source_database="GeoLite2-City-Offline"
+        )
 
-            # Extract ASN if available or provide attribution heuristic
-            net = getattr(response.traits, "network", None)
-            asn = AsnContract(
-                asn=getattr(response.traits, "autonomous_system_number", None),
-                as_name=getattr(response.traits, "autonomous_system_organization", None),
-                as_org=getattr(response.traits, "isp", getattr(response.traits, "autonomous_system_organization", None)),
-                network_prefix=str(net) if net else None,
-                source="GeoLite2-City-Offline"
-            )
-            return geo, asn
+        # Extract ASN if available or provide attribution heuristic
+        net = getattr(response.traits, "network", None)
+        asn = AsnContract(
+            asn=getattr(response.traits, "autonomous_system_number", None),
+            as_name=getattr(response.traits, "autonomous_system_organization", None),
+            as_org=getattr(response.traits, "isp", getattr(response.traits, "autonomous_system_organization", None)),
+            network_prefix=str(net) if net else None,
+            source="GeoLite2-City-Offline"
+        )
+        return geo, asn
     except Exception as e:
         return (
             GeoLocationContract(

@@ -18,7 +18,7 @@ from backend.intelligence.external_intel import ExternalThreatEnricher
 from backend.scoring.fusion import evaluate_risk_fusion
 from backend.reports.generator import generate_court_report
 from cases.integrity import IntegrityLedger
-from backend.cases.manager import create_case
+from backend.cases.manager import create_case, get_case, update_case
 from backend.api.tactical import (
     PRESET_SCENARIOS,
     TACTICAL_CAMPAIGN_REGISTRY,
@@ -27,7 +27,7 @@ from backend.api.tactical import (
     get_campaign_graph_nodes_and_edges,
     get_tactical_campaigns_summary
 )
-from backend.contracts.case_management import CaseCreateInput, CaseDetailContract
+from backend.contracts.case_management import CaseCreateInput, CaseUpdateInput, CaseDetailContract
 from backend.contracts.protocol_forensics import ProtocolForensicsResult
 from backend.contracts.origin_intelligence import OriginIntelligenceResult
 
@@ -264,16 +264,11 @@ async def analyze_email_file(file: UploadFile = File(...)):
     # 7. External Threat Intelligence Enrichment (Shodan, URLhaus, MalwareBazaar)
     enrichment = {"shodan": {}, "urlhaus_hits": [], "malware_bazaar_hits": []}
     try:
-        if protocol_res.origin_ip:
-            enrichment["shodan"] = await external_enricher.probe_shodan_internetdb(protocol_res.origin_ip)
-        for url in ingested.extracted_urls[:10]:
-            urlhaus_res = await external_enricher.probe_urlhaus(url)
-            if urlhaus_res.get("query_status") != "offline":
-                enrichment["urlhaus_hits"].append({"url": url, "result": urlhaus_res})
-        for att in ingested.attachments[:5]:
-            mb_res = await external_enricher.probe_malware_bazaar(att["sha256"])
-            if mb_res.get("query_status") != "offline":
-                enrichment["malware_bazaar_hits"].append({"filename": att["filename"], "sha256": att["sha256"], "result": mb_res})
+        enrichment = await external_enricher.enrich_all(
+            ip=protocol_res.origin_ip,
+            urls=ingested.extracted_urls,
+            attachments=ingested.attachments
+        )
     except Exception:
         pass
 
@@ -699,7 +694,7 @@ def verify_integrity_ledger():
 @app.post("/api/v1/integrity/tamper", tags=["Cryptographic Integrity"], include_in_schema=False)
 async def inject_ledger_tamper():
     """Simulates database tampering to demonstrate instant SHA-256 break detection."""
-    ledger_path = Path("backend/data/audit_ledger.json")
+    ledger_path = settings.LEDGER_PATH
     if ledger_path.exists():
         data = _json.loads(ledger_path.read_text(encoding="utf-8"))
         if len(data) >= 1:
@@ -791,6 +786,28 @@ def create_new_case(case_input: CaseCreateInput):
     return {
         "status": "success",
         "case": case_detail.model_dump()
+    }
+
+@app.get("/api/v1/cases/{case_id}", tags=["Investigation Cases"], summary="Get Investigation Case Details")
+def get_single_case(case_id: str):
+    """Retrieve detailed case dossier including notes, linked emails, and audit chain head."""
+    case_detail = get_case(case_id)
+    if not case_detail:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found.")
+    return {
+        "status": "success",
+        "case": case_detail.model_dump()
+    }
+
+@app.patch("/api/v1/cases/{case_id}", tags=["Investigation Cases"], summary="Update Investigation Case")
+def update_existing_case(case_id: str, case_updates: CaseUpdateInput):
+    """Update case status, priority, add linked emails or notes, and append an immutable audit block."""
+    updated = update_case(case_id, case_updates)
+    if not updated:
+        raise HTTPException(status_code=404, detail=f"Case '{case_id}' not found.")
+    return {
+        "status": "success",
+        "case": updated.model_dump()
     }
 
 # -------------------------------------------------------------------------

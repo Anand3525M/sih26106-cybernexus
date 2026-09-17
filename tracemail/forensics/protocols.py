@@ -86,10 +86,12 @@ def get_organizational_domain(domain: str) -> str:
         
     return ".".join(parts[-2:])
 
-def verify_spf(client_ip: Optional[str], envelope_sender: str, helo_host: str) -> SpfContract:
+def verify_spf(client_ip: Optional[str], envelope_sender: Optional[str], helo_host: Optional[str]) -> SpfContract:
     """
     Validate RFC 7208 SPF using pyspf (spf.check2) against sender IP and envelope Return-Path.
     """
+    envelope_sender = envelope_sender or ""
+    helo_host = helo_host or "unknown"
     sender_domain = envelope_sender.split("@")[-1] if "@" in envelope_sender else helo_host
 
     if not client_ip or is_private_or_local_ip(client_ip):
@@ -341,11 +343,16 @@ def evaluate_dmarc(
     raw_record = dmarc_record_info.get("record")
     
     # Extract DMARC tags if resolved, otherwise apply standard defaults
-    policy_str = tags.get("p", {}).get("value")
-    subdomain_policy = tags.get("sp", {}).get("value")
-    pct_val = tags.get("pct", {}).get("value", 100)
-    aspf_mode = tags.get("aspf", {}).get("value", "r")  # 's' = strict, 'r' = relaxed
-    adkim_mode = tags.get("adkim", {}).get("value", "r")  # 's' = strict, 'r' = relaxed
+    p_tag = tags.get("p")
+    policy_str = p_tag.get("value") if isinstance(p_tag, dict) else None
+    sp_tag = tags.get("sp")
+    subdomain_policy = sp_tag.get("value") if isinstance(sp_tag, dict) else None
+    pct_tag = tags.get("pct")
+    pct_val = pct_tag.get("value", 100) if isinstance(pct_tag, dict) else 100
+    aspf_tag = tags.get("aspf")
+    aspf_mode = aspf_tag.get("value", "r") if isinstance(aspf_tag, dict) else "r"
+    adkim_tag = tags.get("adkim")
+    adkim_mode = adkim_tag.get("value", "r") if isinstance(adkim_tag, dict) else "r"
 
     # Default fallback policy if domain is a major provider or offline demo
     if not policy_str:

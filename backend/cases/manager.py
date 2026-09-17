@@ -13,27 +13,38 @@ from backend.contracts.case_management import (
     CaseNoteContract,
 )
 
+_cases_initialized_db: Optional[str] = None
+
+def _ensure_cases_table():
+    global _cases_initialized_db
+    current_db = str(settings.DB_PATH)
+    if _cases_initialized_db != current_db:
+        conn = sqlite3.connect(current_db)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS cases (
+                case_id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                description TEXT,
+                status TEXT NOT NULL,
+                priority TEXT NOT NULL,
+                investigator TEXT NOT NULL,
+                created_at_utc TEXT NOT NULL,
+                updated_at_utc TEXT NOT NULL,
+                linked_emails_json TEXT NOT NULL,
+                ioc_watchlist_json TEXT NOT NULL,
+                tags_json TEXT NOT NULL,
+                notes_json TEXT NOT NULL,
+                audit_head TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
+        _cases_initialized_db = current_db
+
 def get_cases_db() -> sqlite3.Connection:
+    _ensure_cases_table()
     conn = sqlite3.connect(str(settings.DB_PATH))
     conn.row_factory = sqlite3.Row
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS cases (
-            case_id TEXT PRIMARY KEY,
-            title TEXT NOT NULL,
-            description TEXT,
-            status TEXT NOT NULL,
-            priority TEXT NOT NULL,
-            investigator TEXT NOT NULL,
-            created_at_utc TEXT NOT NULL,
-            updated_at_utc TEXT NOT NULL,
-            linked_emails_json TEXT NOT NULL,
-            ioc_watchlist_json TEXT NOT NULL,
-            tags_json TEXT NOT NULL,
-            notes_json TEXT NOT NULL,
-            audit_head TEXT
-        )
-    """)
-    conn.commit()
     return conn
 
 def create_case(input_data: CaseCreateInput) -> CaseDetailContract:
@@ -105,7 +116,7 @@ def get_case(case_id: str) -> Optional[CaseDetailContract]:
     if not row:
         return None
 
-    raw_notes = json.loads(row["notes_json"])
+    raw_notes = json.loads(row["notes_json"] or "[]")
     notes = [CaseNoteContract.model_validate(n) for n in raw_notes]
 
     return CaseDetailContract(
@@ -117,9 +128,9 @@ def get_case(case_id: str) -> Optional[CaseDetailContract]:
         investigator=row["investigator"],
         created_at_utc=row["created_at_utc"],
         updated_at_utc=row["updated_at_utc"],
-        linked_email_ids=json.loads(row["linked_emails_json"]),
-        ioc_watchlist=json.loads(row["ioc_watchlist_json"]),
-        tags=json.loads(row["tags_json"]),
+        linked_email_ids=json.loads(row["linked_emails_json"] or "[]"),
+        ioc_watchlist=json.loads(row["ioc_watchlist_json"] or "[]"),
+        tags=json.loads(row["tags_json"] or "[]"),
         notes=notes,
         audit_chain_head=row["audit_head"]
     )

@@ -245,7 +245,7 @@ def list_cases(db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
     cases_result = []
     for r in rows:
         case_data = dict(r)
-        linked_ids = json.loads(case_data.get("linked_emails_json", "[]"))
+        linked_ids = json.loads(case_data.get("linked_emails_json") or "[]")
         
         # Retrieve associated email verdicts for each linked email
         associated_verdicts = []
@@ -262,9 +262,9 @@ def list_cases(db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
 
         case_data["associated_email_verdicts"] = associated_verdicts
         case_data["linked_emails"] = linked_ids
-        case_data["ioc_watchlist"] = json.loads(case_data.get("ioc_watchlist_json", "[]"))
-        case_data["tags"] = json.loads(case_data.get("tags_json", "[]"))
-        case_data["notes"] = json.loads(case_data.get("notes_json", "[]"))
+        case_data["ioc_watchlist"] = json.loads(case_data.get("ioc_watchlist_json") or "[]")
+        case_data["tags"] = json.loads(case_data.get("tags_json") or "[]")
+        case_data["notes"] = json.loads(case_data.get("notes_json") or "[]")
         cases_result.append(case_data)
 
     conn.close()

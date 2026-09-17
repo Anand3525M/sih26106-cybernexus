@@ -6,17 +6,27 @@ from typing import Optional, Dict, Any
 
 from backend.config import settings
 
+_cache_initialized_db: Optional[str] = None
+
+def _ensure_cache_table():
+    global _cache_initialized_db
+    current_db = str(settings.DB_PATH)
+    if _cache_initialized_db != current_db:
+        conn = sqlite3.connect(current_db)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS origin_cache (
+                cache_key TEXT PRIMARY KEY,
+                data_json TEXT NOT NULL,
+                created_at_utc TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+        conn.close()
+        _cache_initialized_db = current_db
+
 def get_cache_db() -> sqlite3.Connection:
-    conn = sqlite3.connect(str(settings.DB_PATH))
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS origin_cache (
-            cache_key TEXT PRIMARY KEY,
-            data_json TEXT NOT NULL,
-            created_at_utc TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    return conn
+    _ensure_cache_table()
+    return sqlite3.connect(str(settings.DB_PATH))
 
 def get_cached_intel(cache_key: str) -> Optional[Dict[str, Any]]:
     try:

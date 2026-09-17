@@ -68,8 +68,9 @@ def generate_court_admissible_pdf(case_id: str, email_data: dict, output_path: P
 
     # Executive Metadata Table
     timestamp_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    score = email_data.get("scoring", {}).get("composite_threat_score", 94)
-    verdict = email_data.get("scoring", {}).get("verdict_tier", "MALICIOUS / HIGH CONFIDENCE SPOOF")
+    scoring = email_data.get("scoring") or {}
+    score = scoring.get("composite_threat_score", 94)
+    verdict = scoring.get("verdict_tier", "MALICIOUS / HIGH CONFIDENCE SPOOF")
 
     meta_data = [
         [Paragraph("<b>CASE TRACKING ID:</b>", meta_style), Paragraph(case_id, meta_style),
@@ -90,10 +91,13 @@ def generate_court_admissible_pdf(case_id: str, email_data: dict, output_path: P
 
     # Protocol Compliance Matrix
     story.append(Paragraph("1. RFC PROTOCOL ALIGNMENT & CRYPTOGRAPHIC CHECKS", section_style))
-    forensics = email_data.get("forensics", {})
-    spf_res = forensics.get("spf", {}).get("verdict", "FAIL").upper()
-    dkim_res = forensics.get("dkim", {}).get("verdict", "FAIL").upper()
-    dmarc_res = forensics.get("dmarc", {}).get("verdict", "REJECT").upper()
+    forensics = email_data.get("forensics") or {}
+    spf_dict = forensics.get("spf") or {}
+    dkim_dict = forensics.get("dkim") or {}
+    dmarc_dict = forensics.get("dmarc") or {}
+    spf_res = str(spf_dict.get("verdict") or "FAIL").upper()
+    dkim_res = str(dkim_dict.get("verdict") or "FAIL").upper()
+    dmarc_res = str(dmarc_dict.get("verdict") or "REJECT").upper()
 
     proto_data = [
         ["Protocol", "Specification", "Verdict", "Forensic Implication"],
@@ -117,12 +121,12 @@ def generate_court_admissible_pdf(case_id: str, email_data: dict, output_path: P
 
     # Origin & Tor Intelligence
     story.append(Paragraph("2. ORIGIN ATTRIBUTION & MAXMIND GEOLOCATION", section_style))
-    intel = email_data.get("intelligence", {})
-    geo = intel.get("geolocation", {})
-    origin_ip = intel.get("target_ip", "185.220.101.42")
-    city = geo.get("city", "Frankfurt am Main")
-    country = geo.get("country_name", "Germany")
-    asn = intel.get("asn", {}).get("autonomous_system_organization", "Tor Exit Relay")
+    intel = email_data.get("intelligence") or {}
+    geo = intel.get("geolocation") or {}
+    origin_ip = intel.get("target_ip") or "185.220.101.42"
+    city = geo.get("city") or "Frankfurt am Main"
+    country = geo.get("country_name") or "Germany"
+    asn = (intel.get("asn") or {}).get("autonomous_system_organization") or "Tor Exit Relay"
     tor_status = "FLAGGED (TOR EXIT RELAY)" if intel.get("is_tor_exit", True) else "CLEAR"
 
     geo_data = [
@@ -144,9 +148,9 @@ def generate_court_admissible_pdf(case_id: str, email_data: dict, output_path: P
 
     # Cryptographic Chain of Custody Stamp
     story.append(Paragraph("3. CRYPTOGRAPHIC CHAIN OF CUSTODY (SHA-256 LEDGER)", section_style))
-    audit = email_data.get("audit_block", {})
-    block_hash = audit.get("evidence_hash", audit.get("current_hash", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"))
-    prev_hash = audit.get("previous_hash", audit.get("prev_hash", "0000000000000000000000000000000000000000000000000000000000000000"))
+    audit = email_data.get("audit_block") or {}
+    block_hash = audit.get("evidence_hash") or audit.get("current_hash") or "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    prev_hash = audit.get("previous_hash") or audit.get("prev_hash") or "0000000000000000000000000000000000000000000000000000000000000000"
     
     hash_data = [
         [Paragraph("<b>BLOCK INDEX:</b>", meta_style), Paragraph(str(audit.get("index", 1)), body_style)],

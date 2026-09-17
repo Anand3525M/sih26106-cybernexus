@@ -13,24 +13,35 @@ from backend.contracts.case_management import (
 
 GENESIS_PREV_HASH = "0" * 64
 
+_ledger_initialized_db: Optional[str] = None
+
+def _ensure_ledger_table():
+    global _ledger_initialized_db
+    current_db = str(settings.DB_PATH)
+    if _ledger_initialized_db != current_db:
+        conn = sqlite3.connect(current_db)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS audit_blocks (
+                block_index INTEGER PRIMARY KEY,
+                timestamp_utc TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                actor TEXT NOT NULL,
+                entity_id TEXT NOT NULL,
+                entity_type TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                payload_hash TEXT NOT NULL,
+                prev_hash TEXT NOT NULL,
+                block_hash TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+        conn.close()
+        _ledger_initialized_db = current_db
+
 def get_ledger_db() -> sqlite3.Connection:
+    _ensure_ledger_table()
     conn = sqlite3.connect(str(settings.DB_PATH))
     conn.row_factory = sqlite3.Row
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS audit_blocks (
-            block_index INTEGER PRIMARY KEY,
-            timestamp_utc TEXT NOT NULL,
-            event_type TEXT NOT NULL,
-            actor TEXT NOT NULL,
-            entity_id TEXT NOT NULL,
-            entity_type TEXT NOT NULL,
-            payload_json TEXT NOT NULL,
-            payload_hash TEXT NOT NULL,
-            prev_hash TEXT NOT NULL,
-            block_hash TEXT NOT NULL
-        )
-    """)
-    conn.commit()
     return conn
 
 def compute_payload_hash(payload: Dict[str, Any]) -> str:

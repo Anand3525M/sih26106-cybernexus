@@ -363,7 +363,7 @@ def generate_stix_bundle(record: Dict[str, Any]) -> Dict[str, Any]:
     })
 
     # Indicator for sender domain
-    sender = record.get("sender", "")
+    sender = record.get("sender") or ""
     domain = sender.split("@")[-1] if "@" in sender else ""
     if domain:
         objects.append({
@@ -407,18 +407,23 @@ def get_tactical_campaigns_summary() -> List[Dict[str, Any]]:
     campaigns: Dict[str, Dict[str, Any]] = {}
 
     for item in TACTICAL_CAMPAIGN_REGISTRY:
-        sender = item.get("sender", "")
+        sender = item.get("sender") or ""
         domain = sender.split("@")[-1].lower() if "@" in sender else "unknown"
-        ip = item.get("origin_ip", "unknown")
-        verdict = item.get("verdict", "BENIGN")
-        attachments = item.get("attachments", {}).get("attachments", [])
-        has_exe = any(a.get("dangerous") or a.get("has_double_extension") for a in attachments)
-        is_tor = (item.get("origin_geo", {}).get("city") == "Tor Relay Node" 
-                  or ip == "185.220.101.42" 
-                  or any(m.get("detected") for m in item.get("mitre_attack", []) if m.get("technique") == "T1584.004"))
-        is_bec = ("wire" in (item.get("subject") or "").lower() 
-                  or "acquisition" in (item.get("subject") or "").lower() 
-                  or item.get("reply_to_mismatch", {}).get("mismatch"))
+        ip = item.get("origin_ip") or "unknown"
+        verdict = item.get("verdict") or "BENIGN"
+        att_wrapper = item.get("attachments")
+        attachments = (att_wrapper.get("attachments") if isinstance(att_wrapper, dict) else []) or []
+        has_exe = any(isinstance(a, dict) and (a.get("dangerous") or a.get("has_double_extension")) for a in attachments)
+        origin_geo = item.get("origin_geo") or {}
+        mitre_list = item.get("mitre_attack") or []
+        is_tor = (
+            origin_geo.get("city") == "Tor Relay Node" 
+            or ip == "185.220.101.42" 
+            or any(isinstance(m, dict) and m.get("detected") and m.get("technique") == "T1584.004" for m in mitre_list)
+        )
+        subj = (item.get("subject") or "").lower()
+        reply_to_data = item.get("reply_to_mismatch") or {}
+        is_bec = ("wire" in subj or "acquisition" in subj or reply_to_data.get("mismatch"))
 
         if is_tor or "paypal" in domain or "paypai" in domain:
             c_key = "CAMP-TOR-CREDENTIAL-HARVEST"
@@ -449,7 +454,7 @@ def get_tactical_campaigns_summary() -> List[Dict[str, Any]]:
                 "verdict": verdict,
                 "defcon": item.get("defcon", 5),
                 "defcon_title": item.get("defcon_title", "DEFCON 5"),
-                "max_score": item.get("score", 0),
+                "max_score": item.get("score") or 0,
                 "incident_count": 0,
                 "incident_ids": [],
                 "incidents": [],
@@ -472,18 +477,19 @@ def get_tactical_campaigns_summary() -> List[Dict[str, Any]]:
             "verdict": item.get("verdict"),
             "timestamp": item.get("timestamp")
         })
-        if item.get("score", 0) > c["max_score"]:
-            c["max_score"] = item.get("score", 0)
-            c["verdict"] = item.get("verdict", c["verdict"])
-            c["defcon"] = item.get("defcon", c["defcon"])
-            c["defcon_title"] = item.get("defcon_title", c["defcon_title"])
-        c["targets"].add(item.get("recipient", "unknown"))
+        item_score = item.get("score") or 0
+        if item_score > (c.get("max_score") or 0):
+            c["max_score"] = item_score
+            c["verdict"] = item.get("verdict") or c["verdict"]
+            c["defcon"] = item.get("defcon") or c["defcon"]
+            c["defcon_title"] = item.get("defcon_title") or c["defcon_title"]
+        c["targets"].add(item.get("recipient") or "unknown")
         if ip and ip != "Unknown":
             c["infrastructure_ips"].add(ip)
         if domain:
             c["domains"].add(domain)
-        for m in item.get("mitre_attack", []):
-            if m.get("detected"):
+        for m in (item.get("mitre_attack") or []):
+            if isinstance(m, dict) and m.get("detected"):
                 c["mitre_techniques"].add(f"{m.get('technique')}: {m.get('name')}")
         c["latest_seen"] = item.get("timestamp")
 
@@ -507,7 +513,7 @@ def get_tactical_campaigns_summary() -> List[Dict[str, Any]]:
             "earliest_seen": c["earliest_seen"],
             "latest_seen": c["latest_seen"]
         })
-    return sorted(result, key=lambda x: x["max_score"], reverse=True)
+    return sorted(result, key=lambda x: x.get("max_score") or 0, reverse=True)
 
 def get_campaign_graph_nodes_and_edges() -> Dict[str, Any]:
     """Generate Palantir Gotham Link-Analysis Correlation Graph across all analyzed attacks."""
@@ -536,16 +542,18 @@ def get_campaign_graph_nodes_and_edges() -> Dict[str, Any]:
                 }
             })
 
-        actor_id = f"actor_{camp['threat_actor'].split()[0]}"
+        actor_raw = camp.get("threat_actor") or "Unknown-Actor"
+        actor_slug = re.sub(r'[^a-zA-Z0-9_-]', '_', actor_raw.split()[0] if actor_raw.split() else "Actor")
+        actor_id = f"actor_{actor_slug}"
         if actor_id not in seen:
             seen.add(actor_id)
             nodes.append({
                 "id": actor_id,
-                "label": camp["threat_actor"],
+                "label": actor_raw,
                 "type": "actor",
-                "verdict": camp["verdict"],
-                "score": camp["max_score"],
-                "metadata": {"attributed_campaigns": [camp["name"]]}
+                "verdict": camp.get("verdict", "UNKNOWN"),
+                "score": camp.get("max_score", 0),
+                "metadata": {"attributed_campaigns": [camp.get("name", "Unknown Campaign")]}
             })
         edges.append({"source": actor_id, "target": camp_id, "relation": "ATTRIBUTED_TO"})
 
@@ -556,9 +564,9 @@ def get_campaign_graph_nodes_and_edges() -> Dict[str, Any]:
             seen.add(e_id)
             nodes.append({
                 "id": e_id,
-                "label": item.get("subject", "Untitled")[:34],
+                "label": (item.get("subject") or "Untitled")[:34],
                 "type": "email",
-                "verdict": item.get("verdict", "UNKNOWN"),
+                "verdict": item.get("verdict") or "UNKNOWN",
                 "score": item.get("score", 0),
                 "metadata": {
                     "sender": item.get("sender"),
@@ -569,12 +577,12 @@ def get_campaign_graph_nodes_and_edges() -> Dict[str, Any]:
 
         # Link to matching campaign
         for camp in campaign_clusters:
-            if item.get("id") in camp["incident_ids"]:
+            if item.get("id") in camp.get("incident_ids", []):
                 edges.append({"source": f"camp_{camp['campaign_id']}", "target": e_id, "relation": "CONTAINS_INCIDENT"})
                 break
 
         # 3. Add Domain Node
-        sender = item.get("sender", "")
+        sender = item.get("sender") or ""
         domain = sender.split("@")[-1] if "@" in sender else "unknown-domain"
         d_id = f"domain_{domain}"
         if d_id not in seen:
@@ -601,7 +609,7 @@ def get_campaign_graph_nodes_and_edges() -> Dict[str, Any]:
                     "type": "ip",
                     "verdict": item.get("verdict"),
                     "score": item.get("score", 0),
-                    "metadata": item.get("origin_geo", {})
+                    "metadata": item.get("origin_geo") or {}
                 })
             edges.append({"source": e_id, "target": ip_id, "relation": "ROUTED_THROUGH"})
 
@@ -622,15 +630,17 @@ def get_campaign_graph_nodes_and_edges() -> Dict[str, Any]:
             edges.append({"source": e_id, "target": t_id, "relation": "TARGETS"})
 
         # 6. Add Payload / Attachment Node (if any)
-        attachments = item.get("attachments", {}).get("attachments", [])
+        att_wrapper = item.get("attachments")
+        attachments = (att_wrapper.get("attachments") if isinstance(att_wrapper, dict) else []) or []
         for att in attachments:
-            if att.get("dangerous") or att.get("has_double_extension"):
-                att_id = f"att_{att.get('filename')}"
+            if isinstance(att, dict) and (att.get("dangerous") or att.get("has_double_extension")):
+                fname = att.get("filename") or "unknown_payload"
+                att_id = f"att_{fname}"
                 if att_id not in seen:
                     seen.add(att_id)
                     nodes.append({
                         "id": att_id,
-                        "label": att.get("filename"),
+                        "label": fname,
                         "type": "malware",
                         "verdict": "MALICIOUS",
                         "score": 95,
