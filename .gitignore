@@ -1,9 +1,6 @@
-# Python virtual environments
+# Environments & Bytecode
 venv/
 .venv/
-tracemail/venv/
-
-# Bytecode & Caches
 __pycache__/
 *.py[cod]
 *$py.class
@@ -11,16 +8,11 @@ __pycache__/
 
 # Databases & Runtime State
 *.db
-*.sqlite
 *.sqlite3
-*audit_ledger.json
+*.log
 
-# Generated Forensic Reports
-backend/data/reports/*.pdf
-tracemail/data/reports/*.pdf
-
-# Environment & Editor
-.env
-.DS_Store
-.idea/
+# Workspace & Personal directories
 .vscode/
+.idea/
+legacy_reference/
+sweta-singh/

@@ -1,5 +1,0 @@
-From: vince.kaminski@enron.com
-Subject: Re: Risk Management Model Documentation Review
-Date: 2026-09-10T10:15:00Z
-Sender-IP: 192.152.140.9
-Body: Vince, attached is the updated documentation on the Monte Carlo value-at-risk simulation models. Please review the variance assumptions before the Thursday risk committee meeting. Best regards, Stinson

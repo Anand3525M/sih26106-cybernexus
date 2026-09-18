@@ -1,5 +1,0 @@
-From: hr-alerts@secure-portal-corp.com
-Subject: Urgent: Action Required - Direct Deposit Verification
-Date: 2026-09-10T09:30:00Z
-Sender-IP: 198.51.100.42
-Body: Human Resources has flagged your payroll profile for mandatory verification. To ensure uninterrupted direct deposit processing for the upcoming pay cycle, you must verify your employee credentials within 24 hours. Access your account here: http://login.secure-portal-corp.com/auth/login?session=directdeposit

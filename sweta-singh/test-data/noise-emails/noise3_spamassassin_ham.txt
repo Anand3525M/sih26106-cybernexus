@@ -1,5 +1,0 @@
-From: jm@example.com
-Subject: [SA-dev] SpamAssassin release candidate testing and rule updates
-Date: 2026-09-10T13:00:00Z
-Sender-IP: 212.17.35.4
-Body: Hi all, the new SpamAssassin release candidate tarball is now available on mirrors. Please test the DNSBL rule evaluations and score adjustments on your corpus before we freeze the tag. Report any regressions on bugzilla: http://spamassassin.apache.org/tested_rules.html
